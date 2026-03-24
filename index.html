@@ -1162,6 +1162,11 @@
             display: none;
         }
 
+        /* Mobile header bar: hidden on desktop */
+        .mobile-header-bar {
+            display: none;
+        }
+
         /* ─────────────────────────────────────────────
            MOBILE — everything below 768px
            ───────────────────────────────────────────── */
@@ -1172,15 +1177,20 @@
                 padding-bottom: calc(60px + env(safe-area-inset-bottom));
             }
 
-            /* ── Top header: compact, centered ── */
+            /* ── Prevent iOS auto-zoom on form elements ── */
+            select,
+            input,
+            textarea {
+                font-size: 16px !important;
+            }
+
+            /* ── Top header: collapse desktop nav, show mobile bar ── */
             header {
                 padding: 0;
             }
 
             .header-container {
-                flex-direction: column;
-                align-items: stretch;
-                padding: 0;
+                display: none; /* hide entire nav container on mobile */
             }
 
             /* ── Hide the desktop nav entirely on mobile ── */
@@ -1188,20 +1198,47 @@
                 display: none !important;
             }
 
-            /* ── Mobile top bar: just the logo ── */
-            .logo-section {
-                justify-content: center;
-                padding: 10px 16px 8px;
+            /* ── Mobile header bar ── */
+            .mobile-header-bar {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 16px;
                 padding-top: calc(10px + env(safe-area-inset-top));
                 border-bottom: 1px solid var(--border-color);
             }
 
-            .logo-text h1 {
-                font-size: 1rem;
+            .mobile-header-icon {
+                font-size: 1.5rem;
+                line-height: 1;
+                flex-shrink: 0;
             }
 
-            .logo-text p {
-                font-size: 0.68rem;
+            .mobile-header-text {
+                display: flex;
+                flex-direction: column;
+                gap: 1px;
+                min-width: 0;
+            }
+
+            .mobile-header-title {
+                font-size: 0.95rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, var(--accent-teal), var(--accent-gold));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                letter-spacing: -0.3px;
+            }
+
+            .mobile-header-sub {
+                font-size: 0.65rem;
+                color: var(--text-secondary);
+                font-weight: 500;
+                white-space: nowrap;
             }
 
             /* ── Hero: compact ── */
@@ -1719,6 +1756,16 @@
         .player-vals { display: flex; gap: 0.35rem; flex-shrink: 0; align-items: center; }
         .ktc-val { font-size: 0.65rem; color: #00d4aa; font-weight: 600; min-width: 32px; text-align: right; }
         .fp-rank { font-size: 0.6rem; color: #9382ff; font-weight: 500; min-width: 38px; text-align: right; }
+        .pf-val { font-size: 0.65rem; color: #ff9500; font-weight: 600; min-width: 42px; text-align: right; }
+        .pf-val.unranked { color: var(--text-secondary); opacity: 0.4; }
+        .pf-val.loading { color: var(--text-secondary); opacity: 0.3; font-size: 0.55rem; }
+        .roster-col-header .pf-val { color: var(--text-secondary); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
+        .pf-info-btn { background: none; border: 1px solid var(--border-color); color: #ff9500; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.65rem; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+        .pf-info-btn:hover { border-color: #ff9500; background: rgba(255, 149, 0, 0.08); }
+        .pf-info-panel { display: none; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(255, 149, 0, 0.06); border: 1px solid rgba(255, 149, 0, 0.15); font-size: 0.75rem; color: var(--text-secondary); line-height: 1.55; }
+        .pf-info-panel.open { display: block; }
+        .pf-info-panel strong { color: #ff9500; font-weight: 600; }
+        .pf-load-status { display: none; margin-bottom: 0.75rem; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.7rem; background: rgba(255, 149, 0, 0.08); color: #ff9500; }
         .ktc-val.unranked, .fp-rank.unranked { color: var(--text-secondary); opacity: 0.4; }
         .pos-bar { display: flex; gap: 2px; margin-top: 0.5rem; height: 6px; border-radius: 3px; overflow: hidden; }
         .pos-bar-seg { height: 100%; border-radius: 3px; }
@@ -2685,11 +2732,117 @@
             .wt-bar-track { display: none; }
             .waiver-table thead th.col-bar, .waiver-table td.col-bar { display: none; }
         }
+
+        /* ══════════════════════════════════════════
+           SEASON RECAPS TAB
+           ══════════════════════════════════════════ */
+        .recaps-season-selector { display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .recap-season-btn { padding: 0.6rem 1.75rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; font-weight: 700; font-family: 'Inter', sans-serif; transition: var(--transition); letter-spacing: 0.3px; }
+        .recap-season-btn:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+        .recap-season-btn.active { background: rgba(0,212,170,0.1); border-color: var(--accent-teal); color: var(--accent-teal); }
+        .recap-card { display: none; }
+        .recap-card.active { display: block; }
+        .recap-hero { background: linear-gradient(135deg, rgba(0,212,170,0.07) 0%, rgba(255,215,0,0.04) 100%); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+        .recap-trophy { font-size: 3.5rem; flex-shrink: 0; filter: drop-shadow(0 0 16px rgba(255,215,0,0.45)); }
+        .recap-hero-text h2 { font-size: 1.75rem; font-weight: 800; background: linear-gradient(135deg, var(--accent-teal), var(--accent-gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.2rem; letter-spacing: -0.5px; }
+        .recap-hero-text .recap-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .recap-hero-text .recap-tagline { font-size: 1rem; color: var(--text-primary); font-style: italic; opacity: 0.85; }
+        .recap-story { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.75rem; margin-bottom: 2rem; }
+        .recap-story h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.8px; color: var(--text-secondary); font-weight: 700; margin-bottom: 1rem; }
+        .recap-story p { color: var(--text-primary); line-height: 1.85; font-size: 0.95rem; margin-bottom: 0.85rem; }
+        .recap-story p:last-child { margin-bottom: 0; }
+        .recap-awards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .award-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; transition: var(--transition); }
+        .award-card:hover { border-color: var(--border-color-light); transform: translateY(-2px); }
+        .award-icon { font-size: 1.4rem; margin-bottom: 0.5rem; display: block; }
+        .award-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.25rem; }
+        .award-name { font-size: 0.95rem; font-weight: 700; color: var(--accent-teal); margin-bottom: 0.1rem; }
+        .award-detail { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.1rem; }
+        .recap-section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.8px; color: var(--text-secondary); font-weight: 700; margin-bottom: 1rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
+        .recap-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
+        .recap-timeline { margin-bottom: 2rem; position: relative; padding-left: 1.75rem; }
+        .recap-timeline::before { content: ''; position: absolute; left: 0.5rem; top: 0.25rem; bottom: 0.25rem; width: 2px; background: var(--border-color); border-radius: 1px; }
+        .timeline-item { position: relative; margin-bottom: 1.1rem; }
+        .timeline-dot { position: absolute; left: -1.75rem; top: 0.3rem; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-teal); border: 2px solid var(--bg-primary); }
+        .timeline-dot.gold { background: var(--accent-gold); }
+        .timeline-dot.danger { background: var(--danger); }
+        .timeline-week { font-size: 0.68rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.1rem; }
+        .timeline-event { font-size: 0.9rem; color: var(--text-primary); line-height: 1.5; }
+        .timeline-event strong { color: var(--accent-teal); font-weight: 700; }
+        .timeline-event .score-highlight { color: var(--accent-gold); font-weight: 700; }
+        .recap-playoff-path { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.75rem; margin-bottom: 2rem; }
+        .playoff-path-rounds { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem; }
+        .playoff-round { flex-shrink: 0; min-width: 190px; }
+        .playoff-round-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.5rem; text-align: center; }
+        .playoff-matchup { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
+        .playoff-matchup .pm-team { display: flex; justify-content: space-between; align-items: center; padding: 0.2rem 0; font-size: 0.82rem; gap: 0.5rem; }
+        .playoff-matchup .pm-team.winner { color: var(--accent-teal); font-weight: 700; }
+        .playoff-matchup .pm-team.loser { color: var(--text-secondary); }
+        .playoff-matchup .pm-score { font-family: 'Courier New', monospace; font-size: 0.78rem; flex-shrink: 0; }
+        .playoff-matchup .pm-divider { border: none; border-top: 1px solid var(--border-color); margin: 0.2rem 0; }
+
+        /* ══════════════════════════════════════════
+           TEAM PROFILE MODAL
+           ══════════════════════════════════════════ */
+        .profile-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 2000; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(4px); }
+        .profile-modal-overlay.open { display: flex; }
+        .profile-modal { background: var(--bg-secondary); border: 1px solid var(--border-color-light); border-radius: 16px; width: 100%; max-width: 880px; max-height: 90vh; overflow-y: auto; padding: 2rem; position: relative; box-shadow: 0 24px 80px rgba(0,0,0,0.65); }
+        .profile-modal-close { position: absolute; top: 1rem; right: 1rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-secondary); cursor: pointer; font-size: 1rem; padding: 0.25rem 0.65rem; line-height: 1.5; transition: color 0.2s; font-family: 'Inter', sans-serif; }
+        .profile-modal-close:hover { color: var(--text-primary); border-color: var(--border-color-light); }
+        .profile-modal-header { margin-bottom: 1.5rem; padding-right: 2rem; }
+        .profile-modal-header h2 { font-size: 1.5rem; font-weight: 800; color: var(--accent-teal); margin-bottom: 0.2rem; letter-spacing: -0.5px; }
+        .profile-modal-header p { color: var(--text-secondary); font-size: 0.85rem; }
+        .profile-section { margin-bottom: 1.75rem; }
+        .profile-section-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.8px; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
+        .profile-seasons-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        .profile-season-card { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; text-align: center; transition: var(--transition); }
+        .profile-season-card:hover { border-color: var(--border-color-light); }
+        .profile-season-year { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .profile-season-record { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); font-family: 'Courier New', monospace; margin: 0.3rem 0; }
+        .profile-season-pts { font-size: 0.8rem; color: var(--accent-teal); }
+        .profile-season-result { font-size: 0.72rem; color: var(--accent-gold); margin-top: 0.3rem; font-weight: 600; }
+        .profile-h2h-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; }
+        .profile-h2h-item { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.6rem 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+        .profile-h2h-name { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .profile-h2h-record { font-size: 0.82rem; font-weight: 700; font-family: 'Courier New', monospace; flex-shrink: 0; }
+        .profile-h2h-record.winning { color: var(--success); }
+        .profile-h2h-record.losing { color: var(--danger); }
+        .profile-h2h-record.even { color: var(--text-secondary); }
+        .profile-stat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.75rem; }
+        .profile-stat { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; text-align: center; }
+        .profile-stat-val { font-size: 1.1rem; font-weight: 700; color: var(--accent-teal); font-family: 'Courier New', monospace; }
+        .profile-stat-lbl { font-size: 0.62rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-top: 0.2rem; }
+        .profile-honors { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .profile-honor-badge { background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 20px; padding: 0.35rem 0.9rem; font-size: 0.78rem; color: var(--accent-gold); font-weight: 600; }
+        .manager-link { cursor: pointer; color: inherit; border-bottom: 1px dashed rgba(0,212,170,0.5); transition: color 0.15s, border-color 0.15s; }
+        .manager-link:hover { color: var(--accent-teal); border-bottom-color: var(--accent-teal); }
+
+        /* ══════════════════════════════════════════
+           CONTENDER / REBUILDER QUADRANT
+           ══════════════════════════════════════════ */
+        .quadrant-wrap { position: relative; margin-top: 2rem; }
+        .quadrant-wrap h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-primary); }
+        .quadrant-wrap p { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; }
+        .quadrant-chart-box { position: relative; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; height: 440px; }
+        .quadrant-labels { position: absolute; inset: 1.5rem; pointer-events: none; z-index: 1; }
+        .quadrant-lbl { position: absolute; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; opacity: 0.2; }
+        .quadrant-lbl.tl { top: 0.5rem; left: 0.5rem; color: var(--accent-gold); }
+        .quadrant-lbl.tr { top: 0.5rem; right: 0.5rem; color: var(--accent-teal); text-align: right; }
+        .quadrant-lbl.bl { bottom: 0.5rem; left: 0.5rem; color: var(--danger); }
+        .quadrant-lbl.br { bottom: 0.5rem; right: 0.5rem; color: var(--text-secondary); text-align: right; }
     </style>
 </head>
 <body>
     <!-- HEADER -->
     <header>
+        <!-- Mobile-only top bar (hidden on desktop via CSS) -->
+        <div class="mobile-header-bar">
+            <span class="mobile-header-icon">🏆</span>
+            <div class="mobile-header-text">
+                <span class="mobile-header-title">Til Death do us Part</span>
+                <span class="mobile-header-sub">Dynasty FF &middot; Est. 2023</span>
+            </div>
+        </div>
         <div class="header-container">
             <nav class="nav-tabs" id="navTabs">
                 <div class="nav-group">
@@ -2703,6 +2856,7 @@
                 <div class="nav-group">
                     <span class="nav-group-label">Historical</span>
                     <div class="nav-group-tabs">
+                        <button class="nav-tab" data-tab="recaps">Season Recaps</button>
                         <button class="nav-tab" data-tab="records">Records</button>
                         <button class="nav-tab" data-tab="h2h">Head-to-Head</button>
                         <button class="nav-tab" data-tab="playoffs">Playoffs</button>
@@ -3020,6 +3174,185 @@
             </div>
         </div>
 
+        <!-- SEASON RECAPS TAB -->
+        <div id="recaps" class="tab-content">
+            <h2 class="section-header">Season Recaps</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">The story behind the stats — champions, collapses, and every moment worth remembering.</p>
+            <div class="recaps-season-selector">
+                <button class="recap-season-btn active" data-year="2025">2025</button>
+                <button class="recap-season-btn" data-year="2024">2024</button>
+                <button class="recap-season-btn" data-year="2023">2023</button>
+            </div>
+
+            <!-- 2025 -->
+            <div id="recap-2025" class="recap-card active">
+                <div class="recap-hero">
+                    <div class="recap-trophy">🏆</div>
+                    <div class="recap-hero-text">
+                        <h2>doyersbeast wins it all</h2>
+                        <div class="recap-subtitle">2025 Champion &middot; Tanked for a chip &middot; Championship: 159.64–114.44</div>
+                        <div class="recap-tagline">"The team name said it three years ago. Everyone else just didn't believe it."</div>
+                    </div>
+                </div>
+                <div class="recap-story">
+                    <h3>The Story</h3>
+                    <p>doyersbeast named their team "Tanked for a chip" before a single snap was played in this league. In 2025, that bet cashed. They went 10-4, made the playoffs, and dismantled jakeschwartz 159.64–114.44 in the championship. The tank paid off, exactly as advertised.</p>
+                    <p>The boldest move came in week 9. doyersbeast had just used the 1.01 pick on Ashton Jeanty in the rookie draft — then shipped him to MrEton for Justin Jefferson. A proven veteran over the hottest rookie in the class. By February it looked like genius. Jefferson delivered when it mattered; Jeanty was learning the job on MrEton's roster.</p>
+                    <p>nendy came into the playoffs as the 1 seed (11-3 regular season) and ran straight into jakeschwartz, who put up 162.10 in one of the better semi-final upsets the league has seen. jakeschwartz had all week to feel good about that — then doyersbeast showed up to the final and won by 45 points.</p>
+                    <p>The contrast at the bottom was stark. grffnboss went 1-13, the worst single-season record in league history, and finished with fewer points scored than any team in any year. The Trash Tank name earned its billing from both ends of the rebuild conversation.</p>
+                </div>
+                <div class="recap-section-title">Season Awards</div>
+                <div class="recap-awards">
+                    <div class="award-card"><span class="award-icon">🏆</span><div class="award-label">Champion</div><div class="award-name">doyersbeast</div><div class="award-detail">Tanked for a chip &middot; 159.64–114.44</div></div>
+                    <div class="award-card"><span class="award-icon">🔥</span><div class="award-label">Highest Single Score</div><div class="award-name">nendy — 184.64</div><div class="award-detail">Week 14 &middot; 2nd all-time in league history</div></div>
+                    <div class="award-card"><span class="award-icon">😤</span><div class="award-label">Best Regular Season</div><div class="award-name">nendy / andrewmcorral / nsbarbarino</div><div class="award-detail">All three went 11-3</div></div>
+                    <div class="award-card"><span class="award-icon">🎰</span><div class="award-label">Biggest Playoff Upset</div><div class="award-name">jakeschwartz over nendy</div><div class="award-detail">162.10–152.70 &middot; eliminated the 1-seed</div></div>
+                    <div class="award-card"><span class="award-icon">🔄</span><div class="award-label">Trade of the Year</div><div class="award-name">Jeanty for Jefferson</div><div class="award-detail">doyersbeast ships 1.01 + 2028 R1 for Justin Jefferson (Wk 9)</div></div>
+                    <div class="award-card"><span class="award-icon">📉</span><div class="award-label">Worst Season</div><div class="award-name">grffnboss — 1-13</div><div class="award-detail">Fewest wins and fewest points in league history</div></div>
+                    <div class="award-card"><span class="award-icon">😬</span><div class="award-label">Closest Game (All-Time)</div><div class="award-name">andrewmcorral def. JustinG66</div><div class="award-detail">110.56–109.72 &middot; 0.84-pt margin &middot; Wk 10</div></div>
+                    <div class="award-card"><span class="award-icon">💸</span><div class="award-label">Rebuild of the Year</div><div class="award-name">MrEton receives Jeanty</div><div class="award-detail">12-2 in 2024, 4-10 in 2025 — sold veterans, stocked youth</div></div>
+                </div>
+                <div class="recap-section-title">Key Moments</div>
+                <div class="recap-timeline">
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Rookie Draft · Pick 1.01</div><div class="timeline-event"><strong>doyersbeast</strong> selects <span class="score-highlight">Ashton Jeanty</span> — the prize of a multi-year tank.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-week">Week 8</div><div class="timeline-event"><strong>andrewmcorral</strong> drops <span class="score-highlight">172.36</span> — 3rd-highest score in league history.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Week 9 · Trade</div><div class="timeline-event"><strong>doyersbeast</strong> ships Jeanty + 2028 R1 to MrEton for <span class="score-highlight">Justin Jefferson</span> + 2026 R3. The defining move of the season.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-week">Week 10 · Closest Game in League History</div><div class="timeline-event"><strong>andrewmcorral</strong> beats JustinG66 <span class="score-highlight">110.56–109.72</span> by 0.84 points — the tightest margin ever.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Week 14 (Playoffs)</div><div class="timeline-event"><strong>nendy</strong> explodes for <span class="score-highlight">184.64</span> — 2nd highest score in league history.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot danger"></div><div class="timeline-week">Playoffs Round 2 · Upset</div><div class="timeline-event"><strong>jakeschwartz</strong> stuns 1-seed <strong>nendy</strong> — <span class="score-highlight">162.10–152.70</span>. The 1-seed goes home.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Championship</div><div class="timeline-event"><strong>doyersbeast</strong> beats jakeschwartz <span class="score-highlight">159.64–114.44</span>. The three-year plan is complete.</div></div>
+                </div>
+                <div class="recap-section-title">Championship Bracket</div>
+                <div class="recap-playoff-path"><div class="playoff-path-rounds">
+                    <div class="playoff-round"><div class="playoff-round-label">Round 1</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>doyersbeast</span><span class="pm-score">116.70</span></div><hr class="pm-divider"><div class="pm-team loser"><span>DeezNutz02</span><span class="pm-score">98.26</span></div></div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>jakeschwartz</span><span class="pm-score">126.80</span></div><hr class="pm-divider"><div class="pm-team loser"><span>nsbarbarino</span><span class="pm-score">107.36</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">Semifinals</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>jakeschwartz</span><span class="pm-score">162.10</span></div><hr class="pm-divider"><div class="pm-team loser"><span>nendy (1)</span><span class="pm-score">152.70</span></div></div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>doyersbeast</span><span class="pm-score">151.50</span></div><hr class="pm-divider"><div class="pm-team loser"><span>andrewmcorral</span><span class="pm-score">146.20</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">Championship</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>🏆 doyersbeast</span><span class="pm-score">159.64</span></div><hr class="pm-divider"><div class="pm-team loser"><span>jakeschwartz</span><span class="pm-score">114.44</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">3rd Place</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>andrewmcorral</span><span class="pm-score">121.80</span></div><hr class="pm-divider"><div class="pm-team loser"><span>nendy</span><span class="pm-score">116.68</span></div></div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- 2024 -->
+            <div id="recap-2024" class="recap-card">
+                <div class="recap-hero">
+                    <div class="recap-trophy">🏆</div>
+                    <div class="recap-hero-text">
+                        <h2>MrEton's dominant run</h2>
+                        <div class="recap-subtitle">2024 Champion &middot; Championship: 144.86–132.10</div>
+                        <div class="recap-tagline">"Best regular-season record in league history. Then he went and won the ring too."</div>
+                    </div>
+                </div>
+                <div class="recap-story">
+                    <h3>The Story</h3>
+                    <p>MrEton went 12-2. In a 12-team league where everyone has talent, going 12-2 is not supposed to happen. MrEton did it, then backed it up in the playoffs, beating nendy 144.86–132.10 in the championship. No asterisk on this one.</p>
+                    <p>The biggest transaction of the year didn't involve MrEton. Week 1: SweetSweet shipped CeeDee Lamb and Josh Jacobs to DeezNutz02 in exchange for Jaylen Waddle and three future first-round picks (2025, 2026, 2027). DeezNutz02 went win-now; SweetSweet went full rebuild. Both lived with that decision all year. Neither won the championship.</p>
+                    <p>The game of the year was doyersbeast's week 11 performance: 180.50 against SweetSweet's 60.70. A 119.8-point margin is the widest in league history. doyersbeast wasn't winning the championship in 2024, but they were announcing what was coming.</p>
+                </div>
+                <div class="recap-section-title">Season Awards</div>
+                <div class="recap-awards">
+                    <div class="award-card"><span class="award-icon">🏆</span><div class="award-label">Champion</div><div class="award-name">MrEton</div><div class="award-detail">12-2 regular season &middot; 144.86–132.10 final</div></div>
+                    <div class="award-card"><span class="award-icon">📋</span><div class="award-label">Best Record (All-Time)</div><div class="award-name">MrEton — 12-2</div><div class="award-detail">Best single-season record in league history</div></div>
+                    <div class="award-card"><span class="award-icon">💥</span><div class="award-label">Biggest Blowout (All-Time)</div><div class="award-name">doyersbeast 180.50</div><div class="award-detail">vs SweetSweet 60.70 &middot; 119.8-pt margin &middot; Wk 11</div></div>
+                    <div class="award-card"><span class="award-icon">🔥</span><div class="award-label">Highest Score (Season)</div><div class="award-name">shaqdeezy — 180.22</div><div class="award-detail">3rd place game &middot; still the league's 5th all-time score</div></div>
+                    <div class="award-card"><span class="award-icon">🔄</span><div class="award-label">Trade of the Year</div><div class="award-name">CeeDee Lamb deal</div><div class="award-detail">SweetSweet ships Lamb + Jacobs for Waddle + 3 future 1sts (Wk 1)</div></div>
+                    <div class="award-card"><span class="award-icon">😬</span><div class="award-label">Narrowest Escape</div><div class="award-name">SweetSweet beats nendy</div><div class="award-detail">109.94–108.48 &middot; 1.46-pt margin &middot; Wk 10</div></div>
+                    <div class="award-card"><span class="award-icon">📉</span><div class="award-label">Biggest Collapse</div><div class="award-name">SweetSweet — 3-11</div><div class="award-detail">CeeDee Lamb gone; Waddle couldn't fill the gap</div></div>
+                    <div class="award-card"><span class="award-icon">🎯</span><div class="award-label">Sharpest Manager</div><div class="award-name">MrEton — 85.4% efficiency</div><div class="award-detail">2nd-best manager efficiency in league history</div></div>
+                </div>
+                <div class="recap-section-title">Key Moments</div>
+                <div class="recap-timeline">
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Week 1 · Trade</div><div class="timeline-event"><strong>SweetSweet</strong> trades <span class="score-highlight">CeeDee Lamb + Josh Jacobs</span> to DeezNutz02 for Waddle + 2025, 2026 &amp; 2027 1sts. Season-defining move on day one.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-week">Week 3</div><div class="timeline-event"><strong>MrEton</strong> drops <span class="score-highlight">152.38</span> on SweetSweet's 55.78 — 96-point margin, early signal of the season's dominant team.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot danger"></div><div class="timeline-week">Week 10 · Closest Game</div><div class="timeline-event"><strong>SweetSweet</strong> outlasts nendy <span class="score-highlight">109.94–108.48</span> by 1.46 points — the defending champion nearly loses to a 3-win team.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Week 11 · All-Time Blowout Record</div><div class="timeline-event"><strong>doyersbeast</strong> annihilates SweetSweet <span class="score-highlight">180.50–60.70</span>. 119.8-point margin — the widest in league history.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Playoffs · Championship</div><div class="timeline-event"><strong>MrEton</strong> beats nendy <span class="score-highlight">144.86–132.10</span>. 12-2 season ends with a ring.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-week">Playoffs · 3rd Place</div><div class="timeline-event"><strong>shaqdeezy</strong> drops <span class="score-highlight">180.22</span> in a consolation game — the 5th-highest score in league history.</div></div>
+                </div>
+                <div class="recap-section-title">Championship Bracket</div>
+                <div class="recap-playoff-path"><div class="playoff-path-rounds">
+                    <div class="playoff-round"><div class="playoff-round-label">Round 1</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>nendy (1)</span><span class="pm-score">121.58</span></div><hr class="pm-divider"><div class="pm-team loser"><span>jakeschwartz</span><span class="pm-score">112.54</span></div></div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>shaqdeezy</span><span class="pm-score">132.10</span></div><hr class="pm-divider"><div class="pm-team loser"><span>grffnboss</span><span class="pm-score">100.08</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">Semifinals</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>MrEton</span><span class="pm-score">151.22</span></div><hr class="pm-divider"><div class="pm-team loser"><span>shaqdeezy</span><span class="pm-score">130.78</span></div></div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>nendy</span><span class="pm-score">168.94</span></div><hr class="pm-divider"><div class="pm-team loser"><span>andrewmcorral</span><span class="pm-score">127.64</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">Championship</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>🏆 MrEton</span><span class="pm-score">144.86</span></div><hr class="pm-divider"><div class="pm-team loser"><span>nendy (1)</span><span class="pm-score">132.10</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">3rd Place</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>shaqdeezy</span><span class="pm-score">180.22</span></div><hr class="pm-divider"><div class="pm-team loser"><span>andrewmcorral</span><span class="pm-score">116.00</span></div></div>
+                    </div>
+                </div></div>
+            </div>
+
+            <!-- 2023 -->
+            <div id="recap-2023" class="recap-card">
+                <div class="recap-hero">
+                    <div class="recap-trophy">🏆</div>
+                    <div class="recap-hero-text">
+                        <h2>nendy takes the inaugural crown</h2>
+                        <div class="recap-subtitle">2023 Champion &middot; pedick &middot; Championship: 132.62–114.88</div>
+                        <div class="recap-tagline">"An eight-game win streak, a 12-seed Cinderella, and the highest score the league has ever seen."</div>
+                    </div>
+                </div>
+                <div class="recap-story">
+                    <h3>The Story</h3>
+                    <p>The first season ended the way the standings suggested: nendy, dominant from the jump, lifted the inaugural trophy with a 132.62–114.88 win over andrewmcorral. nendy ran an eight-game winning streak at one point, tied with DeezNutz02 at 11-3 for the best regular-season record, and converted that dominance into hardware. The dynasty's first chapter wrote itself.</p>
+                    <p>Week 3 is the moment everyone remembers. JustinG66 put up <strong>222.74 points</strong> — still the highest single-game score in league history by a massive margin. Not a fluky 150. A number that made people double-check the scoring settings. Real Bros of Simi Valley couldn't sustain it over the season, but that score sits permanently in the record books.</p>
+                    <p>bradysballzfdf was the Cinderella. As the 12th seed, they won two playoff rounds and made the final four before falling short. It was the kind of debut-season run that earns you years of trash-talk ammunition. The trade that mattered: nendy acquired CJ Stroud from doyersbeast in week 10 for Khalil Herbert and future picks. Stroud was ascending; Herbert was fading. It paid off through the playoff run.</p>
+                </div>
+                <div class="recap-section-title">Season Awards</div>
+                <div class="recap-awards">
+                    <div class="award-card"><span class="award-icon">🏆</span><div class="award-label">Champion</div><div class="award-name">nendy (pedick)</div><div class="award-detail">11-3 regular season &middot; 132.62–114.88 final</div></div>
+                    <div class="award-card"><span class="award-icon">🔥</span><div class="award-label">All-Time Highest Score</div><div class="award-name">JustinG66 — 222.74</div><div class="award-detail">Week 3 &middot; League record, still stands</div></div>
+                    <div class="award-card"><span class="award-icon">💥</span><div class="award-label">Biggest Blowout (2023)</div><div class="award-name">JustinG66 222.74</div><div class="award-detail">vs grffnboss 113.72 &middot; 109-pt margin &middot; Wk 3</div></div>
+                    <div class="award-card"><span class="award-icon">📈</span><div class="award-label">Best Regular Season</div><div class="award-name">nendy &amp; DeezNutz02</div><div class="award-detail">Tied 11-3 &middot; nendy won the tiebreaker</div></div>
+                    <div class="award-card"><span class="award-icon">🎰</span><div class="award-label">Cinderella</div><div class="award-name">bradysballzfdf</div><div class="award-detail">12-seed, two playoff wins, Final Four</div></div>
+                    <div class="award-card"><span class="award-icon">🔄</span><div class="award-label">Trade of the Year</div><div class="award-name">nendy gets CJ Stroud</div><div class="award-detail">From doyersbeast for Herbert + picks &middot; Wk 10</div></div>
+                    <div class="award-card"><span class="award-icon">👑</span><div class="award-label">Best Manager Efficiency</div><div class="award-name">nendy — 86.0%</div><div class="award-detail">Best manager efficiency in league history</div></div>
+                    <div class="award-card"><span class="award-icon">😤</span><div class="award-label">Longest Win Streak (All-Time)</div><div class="award-name">nendy — 8 straight</div><div class="award-detail">League record, still the all-time high</div></div>
+                </div>
+                <div class="recap-section-title">Key Moments</div>
+                <div class="recap-timeline">
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-week">Week 1 · Opening Game</div><div class="timeline-event"><strong>andrewmcorral</strong> beats nsbarbarino <span class="score-highlight">91.10–89.84</span> by 1.26 points. The inaugural season opens with a thriller.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Week 3 · All-Time Record</div><div class="timeline-event"><strong>JustinG66</strong> drops <span class="score-highlight">222.74 points</span> — the highest single-game score in league history. Still untouched.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Week 4</div><div class="timeline-event"><strong>nendy</strong> explodes for <span class="score-highlight">185.10</span> — 2nd-highest score in league history at the time.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Week 10 · Trade</div><div class="timeline-event"><strong>nendy</strong> acquires <span class="score-highlight">CJ Stroud</span> from doyersbeast for Herbert + 2024 R1 + R3. Championship catalyst.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-week">Week 12</div><div class="timeline-event"><strong>nendy</strong> obliterates shaqdeezy <span class="score-highlight">156.36–66.86</span>. The 1-seed on cruise control into the playoffs.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Playoffs · Cinderella</div><div class="timeline-event"><strong>bradysballzfdf</strong> (12-seed) stuns DeezNutz02 <span class="score-highlight">151.60–81.94</span>. The biggest playoff upset of the inaugural year.</div></div>
+                    <div class="timeline-item"><div class="timeline-dot gold"></div><div class="timeline-week">Championship</div><div class="timeline-event"><strong>nendy</strong> defeats andrewmcorral <span class="score-highlight">132.62–114.88</span>. The league's first champion is crowned.</div></div>
+                </div>
+                <div class="recap-section-title">Championship Bracket</div>
+                <div class="recap-playoff-path"><div class="playoff-path-rounds">
+                    <div class="playoff-round"><div class="playoff-round-label">Round 1</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>bradysballzfdf (12)</span><span class="pm-score">151.60</span></div><hr class="pm-divider"><div class="pm-team loser"><span>DeezNutz02 (11)</span><span class="pm-score">81.94</span></div></div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>JustinG66 (10)</span><span class="pm-score">142.16</span></div><hr class="pm-divider"><div class="pm-team loser"><span>grffnboss (9)</span><span class="pm-score">122.86</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">Semifinals</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>nendy (1)</span><span class="pm-score">128.70</span></div><hr class="pm-divider"><div class="pm-team loser"><span>DeezNutz02</span><span class="pm-score">108.12</span></div></div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>andrewmcorral (5)</span><span class="pm-score">127.14</span></div><hr class="pm-divider"><div class="pm-team loser"><span>JustinG66 (10)</span><span class="pm-score">91.14</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">Championship</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>🏆 nendy (1)</span><span class="pm-score">132.62</span></div><hr class="pm-divider"><div class="pm-team loser"><span>andrewmcorral (5)</span><span class="pm-score">114.88</span></div></div>
+                    </div>
+                    <div class="playoff-round"><div class="playoff-round-label">3rd Place</div>
+                        <div class="playoff-matchup"><div class="pm-team winner"><span>JustinG66</span><span class="pm-score">145.58</span></div><hr class="pm-divider"><div class="pm-team loser"><span>DeezNutz02</span><span class="pm-score">119.90</span></div></div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+
         <!-- ANALYTICS TAB -->
         <div id="analytics" class="tab-content">
             <h2 class="section-header">Advanced Analytics</h2>
@@ -3030,19 +3363,38 @@
                     <canvas id="luckChart"></canvas>
                 </div>
             </div>
+            <div class="quadrant-wrap">
+                <h3>Contender / Rebuilder Quadrant</h3>
+                <p>Current performance (2025 win %) vs. roster talent (Max PF — the ceiling of what each team could have scored if lineups were set perfectly). Teams in the top-right are contenders now. Bottom-right are underperforming their talent. Bottom-left are rebuilding.</p>
+                <div class="quadrant-chart-box">
+                    <div class="quadrant-labels">
+                        <div class="quadrant-lbl tl">Over-Performing</div>
+                        <div class="quadrant-lbl tr">Contenders</div>
+                        <div class="quadrant-lbl bl">Rebuilding</div>
+                        <div class="quadrant-lbl br">Underperforming</div>
+                    </div>
+                    <canvas id="contenderChart" style="position:relative;z-index:2;"></canvas>
+                </div>
+            </div>
         </div>
 
         <!-- ROSTERS TAB -->
         <div id="rosters" class="tab-content">
             <h2 class="section-header">Current Rosters</h2>
             <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">Full roster breakdown for all 12 teams, including starters, bench, and taxi squad.</p>
-            <div style="display: flex; gap: 1.5rem; margin-bottom: 1.5rem; font-size: 0.75rem; color: var(--text-secondary); align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 1.5rem; margin-bottom: 1rem; font-size: 0.75rem; color: var(--text-secondary); align-items: center; flex-wrap: wrap;">
                 <span>Values shown per player:</span>
+                <span style="color: #ff9500; font-weight: 600;">PF (Starter Pts)</span>
                 <span style="color: #00d4aa; font-weight: 600;">KTC Value</span>
                 <span style="color: #9382ff; font-weight: 500;">FP Dynasty Rank</span>
                 <span style="opacity: 0.5; font-size: 0.7rem;">(1QB / 0.5 PPR / 12-team)</span>
+                <button class="pf-info-btn" onclick="document.getElementById('pfInfoPanel').classList.toggle('open'); this.textContent = document.getElementById('pfInfoPanel').classList.contains('open') ? '\u25B2 PF Info' : '\u24D8 PF Info'">&#9432; PF Info</button>
                 <button id="refreshValuesBtn" onclick="refreshPlayerValues()" style="margin-left:auto;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-secondary);padding:0.3rem 0.75rem;border-radius:6px;font-size:0.7rem;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:0.35rem;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent-teal)';this.style.color='var(--accent-teal)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'"><span id="refreshIcon" style="display:inline-block">&#8635;</span> Refresh Values</button>
             </div>
+            <div id="pfInfoPanel" class="pf-info-panel">
+                <strong>PF (Points For)</strong> shows total fantasy points a player scored while in a starting lineup slot for this specific team across all league seasons (2023&ndash;2025). Points scored while sitting on the bench, taxi squad, or IR do not count. If a player was traded mid-season, their points split between the two teams based on who started them each week. Hover any PF value to see games started and per-game average. Data pulls live from Sleeper each time you load this tab.
+            </div>
+            <div id="pfLoadStatus" class="pf-load-status"></div>
             <div id="refreshStatus" style="display:none;margin-bottom:1rem;padding:0.5rem 1rem;border-radius:6px;font-size:0.75rem;"></div>
             <div id="rosterGrid" class="roster-grid"></div>
         </div>
@@ -3233,6 +3585,33 @@
     <!-- SCROLL TO TOP BUTTON -->
     <button class="scroll-to-top" id="scrollToTop">↑</button>
 
+    <!-- TEAM PROFILE MODAL -->
+    <div class="profile-modal-overlay" id="teamProfileModal">
+        <div class="profile-modal">
+            <button class="profile-modal-close" id="profileModalClose">&times;</button>
+            <div class="profile-modal-header">
+                <h2 id="profileOwnerName"></h2>
+                <p id="profileTeamName"></p>
+            </div>
+            <div class="profile-section">
+                <div class="profile-section-label">Career Stats</div>
+                <div class="profile-stat-row" id="profileCareerStats"></div>
+            </div>
+            <div class="profile-section">
+                <div class="profile-section-label">Season-by-Season</div>
+                <div class="profile-seasons-grid" id="profileSeasons"></div>
+            </div>
+            <div class="profile-section" id="profileHonorsSection">
+                <div class="profile-section-label">Honors</div>
+                <div class="profile-honors" id="profileHonors"></div>
+            </div>
+            <div class="profile-section">
+                <div class="profile-section-label">Head-to-Head Record vs. Everyone</div>
+                <div class="profile-h2h-grid" id="profileH2H"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // LEAGUE DATA
         const allTimeData = {
@@ -3351,30 +3730,51 @@
             textSecondary: '#8b949e'
         };
 
-        // Initialize Tabs
+        // Shared tab-switching logic (no history side-effects)
+        function switchToTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            const btn = document.querySelector('.nav-tab[data-tab="' + tabName + '"]');
+            if (btn) btn.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const panel = document.getElementById(tabName);
+            if (panel) panel.classList.add('active');
+
+            // Trigger chart redraw for specific tabs
+            setTimeout(() => {
+                if (tabName === 'overview' && seasonScoresChart) seasonScoresChart.resize();
+                if (tabName === 'trends') {
+                    if (pfByTeamChart) pfByTeamChart.resize();
+                    if (mgrEffChart) mgrEffChart.resize();
+                    if (yoyChangeChart) yoyChangeChart.resize();
+                    if (maxPfChart) maxPfChart.resize();
+                }
+                if (tabName === 'analytics' && !window._contenderChartDone) {
+                    initContenderChart();
+                    window._contenderChartDone = true;
+                }
+            }, 100);
+        }
+
+        // Initialize Tabs (user clicks push history)
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabName = tab.dataset.tab;
-
-                // Update active tab
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                // Update active content
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                document.getElementById(tabName).classList.add('active');
-
-                // Trigger chart redraw for specific tabs
-                setTimeout(() => {
-                    if (tabName === 'overview' && seasonScoresChart) seasonScoresChart.resize();
-                    if (tabName === 'trends') {
-                        if (pfByTeamChart) pfByTeamChart.resize();
-                        if (mgrEffChart) mgrEffChart.resize();
-                        if (yoyChangeChart) yoyChangeChart.resize();
-                        if (maxPfChart) maxPfChart.resize();
-                    }
-                }, 100);
+                history.pushState(null, '', '#' + tabName);
+                switchToTab(tabName);
             });
+        });
+
+        // Deep link: activate tab from URL hash on page load
+        (function() {
+            const hash = window.location.hash.replace('#', '');
+            if (hash) switchToTab(hash);
+        })();
+
+        // Back/forward: switch tab without pushing new history
+        window.addEventListener('popstate', function() {
+            const hash = window.location.hash.replace('#', '');
+            switchToTab(hash || 'overview');
         });
 
         // Scroll to Top Button
@@ -5008,6 +5408,178 @@
             icon.style.animation = 'none';
         }
 
+        // ========== SLEEPER API - STARTER PF CALCULATION ==========
+        const starterPFData = {}; // {ownerDisplayName: {playerFullName: {pts: number, gp: number}}}
+        let sleeperPlayersCache = null;
+        let pfDataLoaded = false;
+        let pfDataLoading = false;
+
+        // NFL team full names for DEF matching
+        const nflTeamNames = {
+            ARI:'Arizona Cardinals',ATL:'Atlanta Falcons',BAL:'Baltimore Ravens',BUF:'Buffalo Bills',
+            CAR:'Carolina Panthers',CHI:'Chicago Bears',CIN:'Cincinnati Bengals',CLE:'Cleveland Browns',
+            DAL:'Dallas Cowboys',DEN:'Denver Broncos',DET:'Detroit Lions',GB:'Green Bay Packers',
+            HOU:'Houston Texans',IND:'Indianapolis Colts',JAX:'Jacksonville Jaguars',KC:'Kansas City Chiefs',
+            LAC:'Los Angeles Chargers',LAR:'Los Angeles Rams',LV:'Las Vegas Raiders',MIA:'Miami Dolphins',
+            MIN:'Minnesota Vikings',NE:'New England Patriots',NO:'New Orleans Saints',NYG:'New York Giants',
+            NYJ:'New York Jets',PHI:'Philadelphia Eagles',PIT:'Pittsburgh Steelers',SEA:'Seattle Seahawks',
+            SF:'San Francisco 49ers',TB:'Tampa Bay Buccaneers',TEN:'Tennessee Titans',WAS:'Washington Commanders'
+        };
+
+        function getSleeperPlayerName(playerId) {
+            if (!playerId || playerId === '0') return null;
+            // DEF IDs are team abbreviations like "SEA"
+            if (nflTeamNames[playerId]) return nflTeamNames[playerId];
+            const p = sleeperPlayersCache?.[playerId];
+            if (!p) return null;
+            return p.full_name || ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || null;
+        }
+
+        async function fetchStarterPF() {
+            if (pfDataLoading || pfDataLoaded) return;
+            pfDataLoading = true;
+            const status = document.getElementById('pfLoadStatus');
+            if (!status) return;
+            status.style.display = 'block';
+            status.style.background = 'rgba(255, 149, 0, 0.08)';
+            status.style.color = '#ff9500';
+            status.textContent = 'Loading PF data from Sleeper...';
+
+            const SLEEPER = 'https://api.sleeper.app/v1';
+
+            try {
+                // 1. Look up user "nendy" to discover the league
+                const userRes = await fetch(`${SLEEPER}/user/nendy`);
+                if (!userRes.ok) throw new Error('Could not find Sleeper user');
+                const userData = await userRes.json();
+                const userId = userData.user_id;
+
+                // 2. Find the 12-team dynasty league from the most recent season
+                status.textContent = 'Finding dynasty league...';
+                const leaguesRes = await fetch(`${SLEEPER}/user/${userId}/leagues/nfl/2025`);
+                const leagues = await leaguesRes.json();
+                const dynasty = leagues.find(l => l.total_rosters === 12 && l.settings?.type === 2);
+                if (!dynasty) throw new Error('Could not identify 12-team dynasty league');
+
+                // 3. Chain back through seasons using previous_league_id
+                const leagueChain = [{ season: dynasty.season, id: dynasty.league_id, settings: dynasty.settings }];
+                let prevId = dynasty.previous_league_id;
+                while (prevId && prevId !== '0') {
+                    const prevRes = await fetch(`${SLEEPER}/league/${prevId}`);
+                    const prev = await prevRes.json();
+                    leagueChain.push({ season: prev.season, id: prev.league_id, settings: prev.settings });
+                    prevId = prev.previous_league_id;
+                }
+
+                // 4. Fetch Sleeper player database for ID-to-name mapping
+                status.textContent = 'Loading player database (one-time, may take a moment)...';
+                if (!sleeperPlayersCache) {
+                    const pRes = await fetch(`${SLEEPER}/players/nfl`);
+                    sleeperPlayersCache = await pRes.json();
+                }
+
+                // 5. Process each season
+                for (const league of leagueChain) {
+                    status.textContent = `Processing ${league.season} season...`;
+
+                    // Get roster-to-owner mapping
+                    const [rostersRes, usersRes] = await Promise.all([
+                        fetch(`${SLEEPER}/league/${league.id}/rosters`),
+                        fetch(`${SLEEPER}/league/${league.id}/users`)
+                    ]);
+                    const rosters = await rostersRes.json();
+                    const users = await usersRes.json();
+
+                    const rosterToOwner = {};
+                    rosters.forEach(r => {
+                        const user = users.find(u => u.user_id === r.owner_id);
+                        if (user) rosterToOwner[r.roster_id] = user.display_name;
+                    });
+
+                    // Determine weeks to fetch: regular season + playoffs
+                    const playoffStart = league.settings?.playoff_week_start || 15;
+                    const playoffWeeks = league.settings?.playoff_round_type === 2 ? 4 : 3;
+                    const lastWeek = playoffStart + playoffWeeks - 1;
+                    const maxWeek = Math.min(lastWeek, 18);
+
+                    // Fetch all weeks in parallel
+                    const weekPromises = [];
+                    for (let w = 1; w <= maxWeek; w++) {
+                        weekPromises.push(
+                            fetch(`${SLEEPER}/league/${league.id}/matchups/${w}`)
+                                .then(r => r.ok ? r.json() : [])
+                                .catch(() => [])
+                        );
+                    }
+                    const allWeeks = await Promise.all(weekPromises);
+
+                    // Accumulate starter points
+                    allWeeks.forEach(weekData => {
+                        if (!Array.isArray(weekData)) return;
+                        weekData.forEach(matchup => {
+                            const owner = rosterToOwner[matchup.roster_id];
+                            if (!owner) return;
+                            if (!starterPFData[owner]) starterPFData[owner] = {};
+
+                            const starters = matchup.starters || [];
+                            const starterPts = matchup.starters_points || [];
+
+                            starters.forEach((pid, i) => {
+                                if (!pid || pid === '0') return;
+                                const pts = starterPts[i] || 0;
+                                const name = getSleeperPlayerName(pid);
+                                if (!name) return;
+
+                                if (!starterPFData[owner][name]) {
+                                    starterPFData[owner][name] = { pts: 0, gp: 0 };
+                                }
+                                starterPFData[owner][name].pts += pts;
+                                starterPFData[owner][name].gp += 1;
+                            });
+                        });
+                    });
+                }
+
+                pfDataLoaded = true;
+                pfDataLoading = false;
+                status.textContent = 'PF data loaded from Sleeper!';
+                status.style.background = 'rgba(0, 212, 170, 0.1)';
+                status.style.color = 'var(--accent-teal)';
+                initRosters(); // re-render with PF data
+                setTimeout(() => { status.style.display = 'none'; }, 4000);
+
+            } catch (err) {
+                pfDataLoading = false;
+                status.style.background = 'rgba(248,81,73,0.15)';
+                status.style.color = '#f85149';
+                status.textContent = 'PF load failed: ' + err.message + '. PF column will show "..." until data loads.';
+            }
+        }
+
+        // Look up a player's starter PF for a given owner, with fuzzy name matching
+        function getPlayerPF(owner, playerName) {
+            if (!pfDataLoaded || !starterPFData[owner]) return null;
+            const ownerData = starterPFData[owner];
+            // Exact match
+            if (ownerData[playerName]) return ownerData[playerName];
+            // Try normalized name
+            const norm = normalizeName(playerName);
+            if (ownerData[norm]) return ownerData[norm];
+            // Try without suffix
+            const noSuffix = playerName.replace(/ (Jr\.?|Sr\.?|III|II|IV)$/i, '').trim();
+            if (ownerData[noSuffix]) return ownerData[noSuffix];
+            // Try adding common suffixes
+            for (const suf of [' Jr.', ' Jr', ' III', ' II', ' Sr.']) {
+                if (ownerData[playerName + suf]) return ownerData[playerName + suf];
+            }
+            // Partial match (last resort) for DEF names that might differ
+            const keys = Object.keys(ownerData);
+            const lower = playerName.toLowerCase();
+            const found = keys.find(k => k.toLowerCase() === lower);
+            if (found) return ownerData[found];
+            return null;
+        }
+
         // ========== ROSTER FUNCTIONS ==========
         function initRosters() {
             const grid = document.getElementById('rosterGrid');
@@ -5021,14 +5593,27 @@
                 const posBar = Object.entries(r.posCounts).map(([pos, count]) => `<div class="pos-bar-seg" style="width:${(count/total*100)}%;background:${posColors[pos] || '#666'}" title="${pos}: ${count}"></div>`).join('');
 
                 const renderPlayers = (players, showHeader) => {
-                    const header = showHeader ? `<div class="roster-player roster-col-header"><span class="pos"></span><span class="name"></span><span class="player-vals"><span class="ktc-val" title="KeepTradeCut dynasty value (1QB, 0.5 PPR) — Pulled Mar 18, 2026" style="cursor:help">KTC</span><span class="fp-rank" title="FantasyPros dynasty positional rank — Pulled Mar 18, 2026" style="cursor:help">FP</span></span></div>` : '';
+                    const pfColHeader = pfDataLoaded ? '<span class="pf-val" title="Total fantasy points scored as a starter on this team (2023-2025)" style="cursor:help">PF</span>' : '<span class="pf-val loading" title="Loading from Sleeper...">PF</span>';
+                    const header = showHeader ? `<div class="roster-player roster-col-header"><span class="pos"></span><span class="name"></span><span class="player-vals">${pfColHeader}<span class="ktc-val" title="KeepTradeCut dynasty value (1QB, 0.5 PPR) — Pulled Mar 18, 2026" style="cursor:help">KTC</span><span class="fp-rank" title="FantasyPros dynasty positional rank — Pulled Mar 18, 2026" style="cursor:help">FP</span></span></div>` : '';
                     return header + players.map(p => {
                         const ktc = ktcValues[p.n];
                         const fp = fpRanks[p.n];
                         const ktcHtml = ktc ? `<span class="ktc-val" title="KTC Value: ${ktc[0]} (Rank #${ktc[1]})">${ktc[0].toLocaleString()}</span>` : '<span class="ktc-val unranked">—</span>';
                         const fpHtml = fp ? `<span class="fp-rank" title="FantasyPros Dynasty: ${fp}">${fp}</span>` : '<span class="fp-rank unranked">—</span>';
+                        let pfHtml;
+                        if (pfDataLoaded) {
+                            const pf = getPlayerPF(owner, p.n);
+                            if (pf && pf.pts > 0) {
+                                const avg = (pf.pts / pf.gp).toFixed(1);
+                                pfHtml = `<span class="pf-val" title="${pf.gp} games started \u00B7 ${pf.pts.toFixed(1)} total pts \u00B7 ${avg} avg">${pf.pts.toFixed(1)}</span>`;
+                            } else {
+                                pfHtml = '<span class="pf-val unranked">\u2014</span>';
+                            }
+                        } else {
+                            pfHtml = '<span class="pf-val loading">...</span>';
+                        }
                         const team = p.t ? `<span class="nfl-team">${p.t}</span>` : '';
-                        return `<div class="roster-player"><span class="pos ${p.p}">${p.p}</span><span class="name">${p.n} ${team}</span><span class="player-vals">${ktcHtml}${fpHtml}</span></div>`;
+                        return `<div class="roster-player"><span class="pos ${p.p}">${p.p}</span><span class="name">${p.n} ${team}</span><span class="player-vals">${pfHtml}${ktcHtml}${fpHtml}</span></div>`;
                     }).join('');
                 };
 
@@ -5047,7 +5632,7 @@
                         const round = p.match(/R(\d)/)?.[1] || '4';
                         const val = getPickKTCValue(p, owner);
                         const label = getPickLabel(p, owner);
-                        return `<div class="roster-player"><span class="pos" style="color:var(--accent-gold);font-size:0.65rem">PICK</span><span class="name">${label}</span><span class="player-vals"><span class="ktc-val">${val.toLocaleString()}</span><span class="fp-rank unranked">—</span></span></div>`;
+                        return `<div class="roster-player"><span class="pos" style="color:var(--accent-gold);font-size:0.65rem">PICK</span><span class="name">${label}</span><span class="player-vals"><span class="pf-val unranked">\u2014</span><span class="ktc-val">${val.toLocaleString()}</span><span class="fp-rank unranked">\u2014</span></span></div>`;
                     }).join('');
                 }
                 const totalKTC = rosterKTC + picksKTC;
@@ -5225,8 +5810,132 @@
             }
         }
 
+        // 2023 SF dynasty rankings for startup grading (approximate consensus at draft time)
+        const startup2023Ranks = {
+            "Patrick Mahomes":1,"Josh Allen":2,"Justin Jefferson":3,"Ja'Marr Chase":4,"Jalen Hurts":5,
+            "Joe Burrow":6,"CeeDee Lamb":7,"Lamar Jackson":8,"Justin Herbert":9,"Breece Hall":10,
+            "Bijan Robinson":11,"Jonathan Taylor":12,"Jahmyr Gibbs":13,"A.J. Brown":14,
+            "Amon-Ra St. Brown":15,"Garrett Wilson":16,"Tyreek Hill":17,"Jaylen Waddle":18,
+            "Travis Kelce":19,"Chris Olave":20,"Christian McCaffrey":21,"Saquon Barkley":22,
+            "Nick Chubb":23,"Travis Etienne":24,"Kenneth Walker":25,"Tee Higgins":26,
+            "Mark Andrews":27,"Stefon Diggs":28,"DK Metcalf":29,"DeVonta Smith":30,
+            "Josh Jacobs":31,"Kyle Pitts":32,"Tony Pollard":33,"Davante Adams":34,
+            "Anthony Richardson":35,"Drake London":36,"Jaxon Smith-Njigba":37,"Trevor Lawrence":38,
+            "Jordan Addison":39,"Justin Fields":40,"Dalton Kincaid":41,"T.J. Hockenson":42,
+            "Calvin Ridley":43,"Najee Harris":44,"Austin Ekeler":45,"Javonte Williams":46,
+            "Rhamondre Stevenson":47,"Dameon Pierce":48,"Cooper Kupp":49,"Derrick Henry":50,
+            "DJ Moore":51,"Christian Watson":52,"George Pickens":53,"Brandon Aiyuk":54,
+            "Deebo Samuel":55,"D'Andre Swift":56,"Dallas Goedert":57,"James Cook":58,
+            "J.K. Dobbins":59,"Joe Mixon":60,"Quentin Johnston":61,"Zay Flowers":62,
+            "Darren Waller":63,"Keenan Allen":64,"Chris Godwin":65,"George Kittle":66,
+            "Michael Pittman":67,"Cam Akers":68,"Jerry Jeudy":69,"Terry McLaurin":70,
+            "Amari Cooper":71,"Rachaad White":72,"Marquise Brown":73,"Pat Freiermuth":74,
+            "Jahan Dotson":75,"Aaron Jones":76,"Miles Sanders":77,"Alvin Kamara":78,
+            "David Montgomery":79,"Isiah Pacheco":80,"Gabe Davis":81,"Skyy Moore":82,
+            "Alexander Mattison":83,"Zach Charbonnet":84,"Treylon Burks":85,"Diontae Johnson":86,
+            "Brian Robinson":87,"AJ Dillon":88,"Kadarius Toney":89,"Jameson Williams":90,
+            "Christian Kirk":91,"Tua Tagovailoa":92,"DeAndre Hopkins":93,"James Conner":94,
+            "Rashod Bateman":95,"Sam LaPorta":96,"Kyler Murray":97,"Mike Evans":98,
+            "Dalvin Cook":99,"Bryce Young":100,"Deshaun Watson":101,"De'Von Achane":102,
+            "Tyler Lockett":103,"Mike Williams":104,"Brandin Cooks":105,"Jonathan Mingo":106,
+            "Michael Mayer":107,"Khalil Herbert":108,"Tank Bigsby":109,"Tyjae Spears":110,
+            "Marvin Mims":111,"Kendre Miller":112,"Antonio Gibson":113,"Tyler Allgeier":114,
+            "Luke Musgrave":115,"Jamaal Williams":116,"Elijah Moore":117,"Alec Pierce":118,
+            "Roschon Johnson":119,"Elijah Mitchell":120,"Courtland Sutton":121,
+            "JuJu Smith-Schuster":122,"Damien Harris":123,"Jaylen Warren":124,"Jalin Hyatt":125,
+            "Rashaad Penny":126,"David Njoku":127,"Jayden Reed":128,"Rashee Rice":129,
+            "Raheem Mostert":130,"Dak Prescott":131,"Nico Collins":132,
+            "Chigoziem Okonkwo":133,"Chase Brown":134,"Jerome Ford":135,"Romeo Doubs":136,
+            "Tank Dell":137,"Kenneth Gainwell":138,"John Metchie":139,"Juwan Johnson":140,
+            "Daniel Jones":141,"Darnell Mooney":142,"C.J. Stroud":143,"Cole Kmet":144,
+            "Odell Beckham":145,"Michael Wilson":146,"Kenny Pickett":147,"Michael Thomas":148,
+            "Evan Engram":149,"Allen Lazard":150,"Jordan Love":151,"Josh Downs":152,
+            "Isaiah Likely":153,"Sam Howell":154,"Ty Chandler":155,"Samaje Perine":156,
+            "Jerick McKinnon":157,"Zamir White":158,"Evan Hull":159,"Greg Dulcich":160,
+            "Deuce Vaughn":161,"Wan'Dale Robinson":162,"Puka Nacua":163,"Geno Smith":164,
+            "Chuba Hubbard":165,"Ezekiel Elliott":166,"Justyn Ross":167,"Rondale Moore":168,
+            "Jake Ferguson":169,"Sean Tucker":170,"Devin Singletary":171,"Jakobi Meyers":172,
+            "Adam Thielen":173,"Kyren Williams":174,"Israel Abanikanda":175,"Zach Evans":176,
+            "Tyler Boyd":177,"Van Jefferson":178,"Cedric Tillman":179,"Chase Claypool":180,
+            "Hunter Renfrow":181,"Eric Gray":182,"Isaiah Spiller":183,"Rashid Shaheed":184,
+            "Zack Moss":185,"Tyler Higbee":186,"Aaron Rodgers":187,"Dalton Schultz":188,
+            "Donovan Peoples-Jones":189,"Jeff Wilson":190,"Clyde Edwards-Helaire":191,
+            "Kirk Cousins":192,"Deon Jackson":193,"Michael Gallup":194,"Luke Schoonmaker":195,
+            "DeWayne McBride":196,"D'Onta Foreman":197,"Brock Purdy":198,"Michael Carter":199,
+            "Parris Campbell":200,"Dorian Thompson-Robinson":201,"Kayshon Boutte":202,
+            "Darnell Washington":203,"Jake Bobo":204,"Trey Palmer":205,"Joshua Kelley":206,
+            "Harrison Butker":207,"Charlie Jones":208,"Jared Goff":209,"Darius Slayton":210,
+            "Keaton Mitchell":211,"Khalil Shakir":212,"Kenny McIntosh":213,"Gus Edwards":214,
+            "Dawson Knox":215,"Pierre Strong":216,"Cordarrelle Patterson":217,
+            "Xavier Hutchinson":218,"A.T. Perry":219,"Noah Fant":220,"Kareem Hunt":221,
+            "Gerald Everett":222,"Curtis Samuel":223,"Zay Jones":224,"DJ Chark":225,
+            "DeVante Parker":226,"Trey Lance":227,"Noah Gray":228,"K.J. Osborn":229,
+            "Isaiah Hodgins":230,"Leonard Fournette":231,"Rakim Jarrett":232,
+            "Joshua Palmer":233,"Keaontay Ingram":234,"Chris Rodriguez":235,
+            "Terrace Marshall":236,"Marquez Valdes-Scantling":237,"Jordan Mason":238,
+            "Zonovan Knight":239,"Tyquan Thornton":240,"Richie James":241,"Rico Dowdle":242,
+            "Jelani Woods":243,"Matt Breida":244,"Tre Tucker":245,"Robert Woods":246,
+            "Tyrion Davis-Price":247,"Myles Gaskin":248,"Tyler Scott":249,
+            "Hayden Hurst":250,"Trey McBride":251,"Latavius Murray":252,"Mac Jones":253,
+            "Will Levis":254,"Jalen Tolbert":255,"Chase Edmonds":256,
+            // DEF and K — low dynasty value
+            "Philadelphia Eagles":280,"San Francisco 49ers":280,"Dallas Cowboys":280,
+            "Pittsburgh Steelers":280,"Buffalo Bills":280,"New York Jets":280,
+            "New England Patriots":280,"Denver Broncos":280,"Washington Commanders":280,
+            "Baltimore Ravens":280,"Kansas City Chiefs":280,"New Orleans Saints":280,
+            "Seattle Seahawks":280,"Miami Dolphins":280,"Green Bay Packers":280,
+            "Cleveland Browns":280,"Cincinnati Bengals":280,"Jacksonville Jaguars":280,
+            "Carolina Panthers":280,"Evan McPherson":280,"Justin Tucker":280,
+            "Daniel Carlson":280,"Tyler Bass":280,"Cameron Dicker":280,"Younghoe Koo":280,
+            "Jake Elliott":280,"Jason Sanders":280,"Matt Gay":280,"Brandon McManus":280,
+            "Jake Moody":280,"Greg Zuerlein":280,"Jason Myers":280
+        };
+        function getStartup2023Rank(name) {
+            return startup2023Ranks[name] || startup2023Ranks[normalizeName(name)] || null;
+        }
+
+        // Startup grade: uses min(2023 rank, current KTC rank) to avoid penalizing
+        // aging players while still rewarding prescient sleeper picks
+        function calculateGradeStartup(playerName, overallPickNum, totalPicks) {
+            const currentRank = getPlayerKTCRank(playerName);
+            const rank2023 = getStartup2023Rank(playerName);
+            let effectiveRank;
+            if (rank2023 && currentRank && currentRank !== '-') {
+                effectiveRank = Math.min(rank2023, currentRank);
+            } else if (rank2023) {
+                effectiveRank = rank2023;
+            } else if (currentRank && currentRank !== '-') {
+                effectiveRank = currentRank;
+            } else {
+                const pct = overallPickNum / totalPicks;
+                if (pct <= 0.1) return 'C+';
+                if (pct <= 0.25) return 'C';
+                if (pct <= 0.5) return 'C-';
+                return 'D+';
+            }
+            const expectedRank = Math.max(10, (overallPickNum / totalPicks) * 300);
+            const ratio = effectiveRank / expectedRank;
+            if (ratio <= 0.35) return 'A+';
+            if (ratio <= 0.55) return 'A';
+            if (ratio <= 0.75) return 'A-';
+            if (ratio <= 1.0)  return 'B+';
+            if (ratio <= 1.4)  return 'B';
+            if (ratio <= 2.0)  return 'B-';
+            if (ratio <= 2.8)  return 'C+';
+            if (ratio <= 3.8)  return 'C';
+            if (ratio <= 5.5)  return 'C-';
+            if (ratio <= 8.0)  return 'D+';
+            if (ratio <= 12.0) return 'D';
+            if (ratio <= 18.0) return 'D-';
+            return 'F';
+        }
+
         // KTC-only grade: compare player dynasty rank vs expected rank at pick position
-        function calculateGradeKTC(playerName, overallPickNum, totalPicks, position) {
+        function calculateGradeKTC(playerName, overallPickNum, totalPicks, position, draftType) {
+            // Startup uses separate grading with 2023 context
+            if (draftType === 'startup2023') {
+                return calculateGradeStartup(playerName, overallPickNum, totalPicks);
+            }
             const ktcRank = getPlayerKTCRank(playerName);
             if (!ktcRank || ktcRank === '-') {
                 const pct = overallPickNum / totalPicks;
@@ -5241,8 +5950,16 @@
             // ratio < 1: player ranks better than expected (value)
             // ratio > 1: player ranks worse than expected (reach)
 
-            // Late-round TE penalty: TEs in round 3+ rarely hit dynasty value
+            // Late-round deflation: rounds 3-4 expectedRank is generous, so
+            // bump ratio to keep grades realistic for dart-throw picks
             const round = Math.ceil(overallPickNum / 12);
+            if (round === 3) {
+                ratio *= 1.12;
+            } else if (round >= 4) {
+                ratio *= 1.22;
+            }
+
+            // Additional TE penalty: TEs in round 3+ rarely hit dynasty value
             if (position === 'TE' && round >= 3) {
                 ratio *= 1.35;
             }
@@ -5299,20 +6016,19 @@
             const ownerGrades = {};
             picks.forEach(pick => {
                 const owner = pick[4];
-                const grade = calculateGradeKTC(pick[2], pick[1], totalPicks, pick[3]);
+                const grade = calculateGradeKTC(pick[2], pick[1], totalPicks, pick[3], draftType);
                 if (!ownerGrades[owner]) ownerGrades[owner] = [];
                 ownerGrades[owner].push(grade);
             });
 
             // GPA per owner
-            const gradeValues = {'A+':4.3,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0.0};
+            const gradeValues = {'A+':4.0,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0.0};
             const ownerGPA = {};
             for (const owner in ownerGrades) {
                 const grades = ownerGrades[owner];
                 const gpa = grades.reduce((sum, g) => sum + (gradeValues[g] || 0), 0) / grades.length;
                 let gpaLetter = 'F';
-                if (gpa >= 4.15) gpaLetter = 'A+';
-                else if (gpa >= 3.85) gpaLetter = 'A';
+                if (gpa >= 3.85) gpaLetter = 'A';
                 else if (gpa >= 3.5) gpaLetter = 'A-';
                 else if (gpa >= 3.15) gpaLetter = 'B+';
                 else if (gpa >= 2.85) gpaLetter = 'B';
@@ -5322,7 +6038,7 @@
                 else if (gpa >= 1.5) gpaLetter = 'C-';
                 else if (gpa >= 1.15) gpaLetter = 'D+';
                 else if (gpa >= 0.85) gpaLetter = 'D';
-                else if (gpa > 0.3) gpaLetter = 'D-';
+                else if (gpa > 0.35) gpaLetter = 'D-';
                 ownerGPA[owner] = { gpa: gpa.toFixed(2), letter: gpaLetter };
             }
 
@@ -5340,7 +6056,7 @@
                                 <div class="db-grade-gpa db-gpa-wrap">
                                     GPA ${data.gpa}
                                     <span class="db-gpa-icon">?</span>
-                                    <span class="db-gpa-tip">Grade Point Average — each pick is graded A+ to F based on how the player's KTC dynasty rank compares to their draft slot. GPA averages those grades across all picks on a 4.3 scale.</span>
+                                    <span class="db-gpa-tip">Grade Point Average on a 4.0 scale. Each pick is graded A+ to F based on how the player's KTC dynasty rank compares to their draft slot, then averaged across all picks.</span>
                                 </div>
                             </div>
                         </div>`;
@@ -5381,7 +6097,7 @@
                         const isMulti = Array.isArray(pickData) && Array.isArray(pickData[0]);
                         const pickArr = isMulti ? pickData : [pickData];
                         pickArr.forEach(pick => {
-                            try { gridContainer.appendChild(createTile(pick, totalPicks)); }
+                            try { gridContainer.appendChild(createTile(pick, totalPicks, draftType)); }
                             catch(e) { console.error('Tile error:', pick, e); }
                         });
                     }
@@ -5390,9 +6106,9 @@
         }
 
         // Create a pick tile — format: [round, pickNum, playerName, pos, owner, nflTeam, slot]
-        function createTile(pick, totalPicks) {
+        function createTile(pick, totalPicks, draftType) {
             const [round, pickNum, playerName, pos, owner, nflTeam, slot] = pick;
-            const grade = calculateGradeKTC(playerName, pickNum, totalPicks || 48, pos);
+            const grade = calculateGradeKTC(playerName, pickNum, totalPicks || 48, pos, draftType);
 
             // Split into first + last (handle single-word names)
             const parts = playerName.trim().split(/\s+/);
@@ -5475,11 +6191,174 @@
             // New tabs
             safeInit('powerRankings', () => initPowerRankings());
             safeInit('analytics', () => initAnalytics());
-            safeInit('rosters', () => initRosters());
+            safeInit('rosters', () => { initRosters(); fetchStarterPF(); });
             safeInit('draftCapital', () => initDraftCapital());
             safeInit('draftBoard', () => initDraftBoard());
             safeInit('transactions', () => initTransactions());
         });
+
+        // ═══════════════════════════════════════════
+        //  SEASON RECAPS — Tab button toggle
+        // ═══════════════════════════════════════════
+        document.querySelectorAll('.recap-season-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.recap-season-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.recap-card').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                const card = document.getElementById('recap-' + btn.dataset.year);
+                if (card) card.classList.add('active');
+            });
+        });
+
+        // ═══════════════════════════════════════════
+        //  TEAM PROFILE MODAL
+        // ═══════════════════════════════════════════
+        const championshipResults = {
+            nendy:         { '2023': '🏆 Champion', '2024': '🥈 Runner-Up' },
+            MrEton:        { '2024': '🏆 Champion' },
+            doyersbeast:   { '2025': '🏆 Champion' },
+            andrewmcorral: { '2023': '🥈 Runner-Up', '2024': '🥉 3rd Place', '2025': '🥉 3rd Place' },
+            JustinG66:     { '2023': '🥉 3rd Place' },
+            shaqdeezy:     { '2024': '🥉 3rd Place' },
+            jakeschwartz:  { '2025': '🥈 Runner-Up' },
+            DeezNutz02:    { '2023': '4th Place' },
+        };
+
+        function openTeamProfile(owner) {
+            const data = allTimeData[owner];
+            if (!data) return;
+            document.getElementById('profileOwnerName').textContent = owner;
+            document.getElementById('profileTeamName').textContent = data.team_name;
+            document.getElementById('profileCareerStats').innerHTML = `
+                <div class="profile-stat"><div class="profile-stat-val">${data.total_wins}-${data.total_losses}</div><div class="profile-stat-lbl">All-Time Record</div></div>
+                <div class="profile-stat"><div class="profile-stat-val">${data.win_pct}%</div><div class="profile-stat-lbl">Win %</div></div>
+                <div class="profile-stat"><div class="profile-stat-val">${parseFloat(data.avg_score).toFixed(1)}</div><div class="profile-stat-lbl">Avg / Week</div></div>
+                <div class="profile-stat"><div class="profile-stat-val">${data.max_week}</div><div class="profile-stat-lbl">Best Week</div></div>
+                <div class="profile-stat"><div class="profile-stat-val">${data.manager_efficiency}%</div><div class="profile-stat-lbl">Mgr Eff.</div></div>
+                <div class="profile-stat"><div class="profile-stat-val">${parseFloat(data.total_ppts).toFixed(0)}</div><div class="profile-stat-lbl">Max PF</div></div>
+            `;
+            document.getElementById('profileSeasons').innerHTML = ['2023','2024','2025'].map(yr => {
+                const s = data.seasons[yr];
+                if (!s) return '';
+                const result = (championshipResults[owner] || {})[yr] || '';
+                return `<div class="profile-season-card">
+                    <div class="profile-season-year">${yr}</div>
+                    <div class="profile-season-record">${s.wins}-${s.losses}</div>
+                    <div class="profile-season-pts">${parseFloat(s.fpts).toFixed(1)} pts scored</div>
+                    ${result ? `<div class="profile-season-result">${result}</div>` : ''}
+                </div>`;
+            }).join('');
+            const honors = [];
+            if ((championshipResults[owner]||{})['2023']==='🏆 Champion') honors.push('🏆 2023 Champion');
+            if ((championshipResults[owner]||{})['2024']==='🏆 Champion') honors.push('🏆 2024 Champion');
+            if ((championshipResults[owner]||{})['2025']==='🏆 Champion') honors.push('🏆 2025 Champion');
+            if (parseFloat(data.win_pct) >= 60) honors.push('All-Time Win % Leader Tier');
+            if (parseFloat(data.manager_efficiency) >= 85) honors.push('Elite Manager Efficiency');
+            if (parseFloat(data.max_week) >= 180) honors.push('180+ Point Game Club');
+            if (owner === 'JustinG66') honors.push('🔥 All-Time High Score (222.74)');
+            if (owner === 'nendy') honors.push('😤 All-Time Win Streak (8 straight)');
+            if (owner === 'doyersbeast') honors.push('💥 All-Time Blowout Record (180.50)');
+            const honorsSec = document.getElementById('profileHonorsSection');
+            if (honors.length) {
+                document.getElementById('profileHonors').innerHTML = honors.map(h => `<span class="profile-honor-badge">${h}</span>`).join('');
+                honorsSec.style.display = '';
+            } else {
+                honorsSec.style.display = 'none';
+            }
+            const ownerH2H = h2hData[owner] || {};
+            document.getElementById('profileH2H').innerHTML = Object.keys(ownerH2H).sort().map(opp => {
+                const rec = ownerH2H[opp];
+                const cls = rec.wins > rec.losses ? 'winning' : rec.wins < rec.losses ? 'losing' : 'even';
+                return `<div class="profile-h2h-item"><span class="profile-h2h-name">${opp}</span><span class="profile-h2h-record ${cls}">${rec.wins}-${rec.losses}</span></div>`;
+            }).join('');
+            document.getElementById('teamProfileModal').classList.add('open');
+        }
+
+        document.getElementById('profileModalClose').addEventListener('click', () => {
+            document.getElementById('teamProfileModal').classList.remove('open');
+        });
+        document.getElementById('teamProfileModal').addEventListener('click', e => {
+            if (e.target.id === 'teamProfileModal') document.getElementById('teamProfileModal').classList.remove('open');
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') document.getElementById('teamProfileModal').classList.remove('open');
+        });
+
+        // Make owner names in standings table clickable — observe for re-sorts
+        new MutationObserver(() => {
+            document.querySelectorAll('#standingsBody .owner-name').forEach(el => {
+                if (!el.classList.contains('manager-link')) {
+                    el.classList.add('manager-link');
+                    el.title = "View " + el.textContent.trim() + "'s full profile";
+                    el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(el.textContent.trim()); });
+                }
+            });
+        }).observe(document.getElementById('standingsBody'), { childList: true });
+
+        // ═══════════════════════════════════════════
+        //  CONTENDER / REBUILDER QUADRANT CHART
+        // ═══════════════════════════════════════════
+        let contenderChartInst = null;
+        function initContenderChart() {
+            const ctx = document.getElementById('contenderChart');
+            if (!ctx || contenderChartInst) return;
+            const palette = ['#00d4aa','#ffd700','#f85149','#9382ff','#ff9500','#5ac8fa','#ff6b6b','#4ecdc4','#45b7d1','#96ceb4','#ffeaa7','#dda0dd'];
+            const owners = Object.keys(allTimeData);
+            const datasets = owners.map((owner, i) => {
+                const d = allTimeData[owner];
+                const s25 = d.seasons['2025'];
+                const winPct = s25 ? parseFloat((s25.wins / (s25.wins + s25.losses) * 100).toFixed(1)) : 0;
+                return {
+                    label: owner,
+                    data: [{ x: parseFloat(d.total_ppts), y: winPct }],
+                    backgroundColor: palette[i % palette.length] + 'bb',
+                    borderColor: palette[i % palette.length],
+                    borderWidth: 2, pointRadius: 11, pointHoverRadius: 14,
+                };
+            });
+            const allPpts = owners.map(o => parseFloat(allTimeData[o].total_ppts));
+            const midPpts = (Math.min(...allPpts) + Math.max(...allPpts)) / 2;
+            contenderChartInst = new Chart(ctx, {
+                type: 'scatter',
+                data: { datasets },
+                plugins: [
+                    { id: 'quadrantLines', afterDraw(chart) {
+                        const { ctx: c, chartArea: { left, right, top, bottom }, scales } = chart;
+                        c.save(); c.strokeStyle = 'rgba(255,255,255,0.07)'; c.lineWidth = 1; c.setLineDash([5,5]);
+                        const mx = scales.x.getPixelForValue(midPpts), my = scales.y.getPixelForValue(50);
+                        c.beginPath(); c.moveTo(mx,top); c.lineTo(mx,bottom); c.stroke();
+                        c.beginPath(); c.moveTo(left,my); c.lineTo(right,my); c.stroke();
+                        c.restore();
+                    }},
+                    { id: 'ownerLabels', afterDraw(chart) {
+                        const { ctx: c, scales } = chart;
+                        chart.data.datasets.forEach(ds => {
+                            const pt = ds.data[0];
+                            c.save(); c.font = '600 9.5px Inter,sans-serif'; c.fillStyle = '#e8eef2'; c.textAlign = 'center';
+                            c.fillText(ds.label, scales.x.getPixelForValue(pt.x), scales.y.getPixelForValue(pt.y) - 15);
+                            c.restore();
+                        });
+                    }}
+                ],
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label(ctx) {
+                            const o = ctx.dataset.label, d = allTimeData[o];
+                            return [o + ' — ' + d.team_name, '2025 Win %: ' + ctx.parsed.y + '%', 'Max PF: ' + ctx.parsed.x.toFixed(0)];
+                        }}}
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Roster Talent — Max PF (all-time)', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 } } },
+                        y: { title: { display: true, text: '2025 Season Win %', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 }, callback: v => v + '%' }, min: 0, max: 100 }
+                    },
+                    onClick(e, els) {
+                        if (els.length) openTeamProfile(contenderChartInst.data.datasets[els[0].datasetIndex].label);
+                    }
+                }
+            });
+        }
     </script>
 
     <!-- ═══════════════════════════════════════════════
@@ -5607,6 +6486,9 @@
 
         // Reuse the existing desktop tab-switching logic
         function activateTab(tabName) {
+            // Update URL hash so the link stays shareable
+            history.pushState(null, '', '#' + tabName);
+
             // Deactivate all desktop nav tabs
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             const desktopTab = document.querySelector('.nav-tab[data-tab="' + tabName + '"]');
