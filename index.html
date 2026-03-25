@@ -29,6 +29,28 @@
             --danger: #f85149;
             --warning: #ffd700;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* Type Scale */
+            --text-xs: 0.625rem;    /* 10px - badges, pills, metadata */
+            --text-sm: 0.75rem;     /* 12px - table headers, captions */
+            --text-base: 0.875rem;  /* 14px - body text, table cells */
+            --text-md: 1rem;        /* 16px - card titles, nav tabs */
+            --text-lg: 1.25rem;     /* 20px - section headers */
+            --text-xl: 1.5rem;      /* 24px - page titles */
+            --text-2xl: 2rem;       /* 32px - hero stat values */
+            --text-3xl: 2.5rem;     /* 40px - hero headline */
+
+            /* Spacing */
+            --space-section: 2rem;
+            --space-subsection: 1.25rem;
+            --card-padding: 1.5rem;
+            --card-padding-compact: 1rem;
+
+            /* Border Radius */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-full: 9999px;
         }
 
         html {
@@ -82,6 +104,10 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+        @keyframes medal-shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
 
         .logo-text h1 {
             font-size: clamp(0.7rem, 2vw, 1.5rem);
@@ -95,14 +121,13 @@
         }
 
         .discord-link {
-            color: var(--text-secondary);
-            opacity: 0.5;
-            transition: opacity 0.2s, color 0.2s;
+            color: #6b7280;
+            transition: color 0.2s;
             margin-left: 0.5rem;
             display: flex;
             align-items: center;
         }
-        .discord-link:hover { opacity: 1; color: #5865F2; }
+        .discord-link:hover { color: #5865F2; }
         .discord-icon { width: 22px; height: 22px; }
 
         .logo-text p {
@@ -132,11 +157,10 @@
             padding: 0.35rem 0.15rem 0.15rem;
         }
         .nav-group-label {
-            font-size: 0.5rem;
+            font-size: 0.625rem;
             text-transform: uppercase;
             letter-spacing: 1.8px;
-            color: var(--text-secondary);
-            opacity: 0.35;
+            color: #6b7280;
             white-space: nowrap;
             line-height: 1;
             margin-bottom: 0.25rem;
@@ -214,7 +238,11 @@
             width: 180px;
             height: 180px;
             border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, #3a3000, #1a1400 50%, #0d0a00);
+            background:
+                linear-gradient(110deg, transparent 25%, rgba(255,215,0,0.08) 37%, rgba(255,215,0,0.15) 50%, rgba(255,215,0,0.08) 63%, transparent 75%),
+                radial-gradient(circle at 35% 35%, #3a3000, #1a1400 50%, #0d0a00);
+            background-size: 200% 100%, 100% 100%;
+            animation: medal-shimmer 2s ease-in-out 0.5s 1 forwards;
             border: 4px solid;
             border-image: none;
             border-color: #c9a84c;
@@ -280,8 +308,7 @@
 
         .champion-team {
             font-size: 0.65rem;
-            color: #c9a84c;
-            opacity: 0.7;
+            color: #a8922e;
             letter-spacing: 0.5px;
             display: flex;
             flex-direction: column;
@@ -407,8 +434,8 @@
             display: inline-block;
             margin-left: 4px;
             font-size: 0.7rem;
-            opacity: 0.3;
-            transition: opacity 0.2s ease;
+            color: #6b7280;
+            transition: color 0.2s ease;
         }
 
         /* COLUMN HEADER TOOLTIPS */
@@ -1524,6 +1551,25 @@
             .waiver-table td, .waiver-table th { padding: 7px 8px; font-size: 0.75rem; }
             .wt-bar-track { display: none; }
             .waiver-table thead th.col-bar, .waiver-table td.col-bar { display: none; }
+
+            /* ── Mobile tap targets (min 44px) ── */
+            .expand-btn { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+            .pr-writeup-toggle { min-height: 44px; display: flex; align-items: center; }
+            .roster-picks-toggle { min-height: 44px; display: flex; align-items: center; }
+            .pf-info-btn { min-height: 44px; }
+            .transactions-filter-btn { min-height: 44px; }
+
+            /* ── Table scroll fade hint ── */
+            .table-container { position: relative; }
+            .table-container::after {
+                content: '';
+                position: absolute;
+                top: 0; right: 0; bottom: 0;
+                width: 20px;
+                background: linear-gradient(to left, rgba(15,17,23,0.8), transparent);
+                pointer-events: none;
+                z-index: 2;
+            }
         }
 
         /* ─────────────────────────────────────────────
@@ -1666,6 +1712,11 @@
                 background: rgba(0, 212, 170, 0.1);
             }
 
+            .mobile-more-item.active-tab {
+                border-left: 3px solid var(--accent-teal);
+                background: rgba(0, 212, 170, 0.05);
+            }
+
             .mobile-more-icon {
                 font-size: 1.15rem;
                 min-width: 28px;
@@ -1680,9 +1731,8 @@
             }
 
             .mobile-more-chevron {
-                color: var(--text-secondary);
+                color: #6b7280;
                 font-size: 1rem;
-                opacity: 0.5;
             }
         }
 
@@ -1733,7 +1783,7 @@
         .roster-card-header > div:first-child { min-width: 0; overflow: hidden; }
         .roster-card-header .age-badge { font-size: 0.75rem; color: var(--text-secondary); background: var(--bg-tertiary); padding: 0.25rem 0.5rem; border-radius: 4px; }
         .ktc-total-badge { text-align: center; background: rgba(0,212,170,0.08); border: 1px solid rgba(0,212,170,0.2); padding: 0.2rem 0.6rem; border-radius: 6px; }
-        .ktc-total-label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); opacity: 0.6; }
+        .ktc-total-label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; }
         .ktc-total-value { font-size: 0.9rem; font-weight: 700; color: var(--accent-teal); }
         .roster-picks-toggle { width: 100%; background: none; border: none; color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; padding: 0.5rem 0; cursor: pointer; font-family: 'Inter', sans-serif; text-align: left; transition: color 0.2s; }
         .roster-picks-toggle:hover { color: var(--accent-gold); }
@@ -1752,23 +1802,56 @@
         .roster-player .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .roster-player .name .nfl-team { color: var(--text-secondary); font-size: 0.7rem; margin-left: 0.25rem; }
         .roster-col-header { padding-bottom: 0.15rem; margin-bottom: 0.1rem; border-bottom: 1px solid var(--border-color); }
-        .roster-col-header .ktc-val, .roster-col-header .fp-rank { color: var(--text-secondary); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
+        .roster-col-header .ktc-val, .roster-col-header .fp-rank { color: #7e868f; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .player-vals { display: flex; gap: 0.35rem; flex-shrink: 0; align-items: center; }
         .ktc-val { font-size: 0.65rem; color: #00d4aa; font-weight: 600; min-width: 32px; text-align: right; }
         .fp-rank { font-size: 0.6rem; color: #9382ff; font-weight: 500; min-width: 38px; text-align: right; }
         .pf-val { font-size: 0.65rem; color: #ff9500; font-weight: 600; min-width: 42px; text-align: right; }
-        .pf-val.unranked { color: var(--text-secondary); opacity: 0.4; }
-        .pf-val.loading { color: var(--text-secondary); opacity: 0.3; font-size: 0.55rem; }
-        .roster-col-header .pf-val { color: var(--text-secondary); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
+        .pf-val.unranked { color: #576068; }
+        .pf-val.loading { color: #505861; font-size: 0.55rem; }
+        .roster-col-header .pf-val { color: #7e868f; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .pf-info-btn { background: none; border: 1px solid var(--border-color); color: #ff9500; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.65rem; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
         .pf-info-btn:hover { border-color: #ff9500; background: rgba(255, 149, 0, 0.08); }
         .pf-info-panel { display: none; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(255, 149, 0, 0.06); border: 1px solid rgba(255, 149, 0, 0.15); font-size: 0.75rem; color: var(--text-secondary); line-height: 1.55; }
         .pf-info-panel.open { display: block; }
         .pf-info-panel strong { color: #ff9500; font-weight: 600; }
         .pf-load-status { display: none; margin-bottom: 0.75rem; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.7rem; background: rgba(255, 149, 0, 0.08); color: #ff9500; }
-        .ktc-val.unranked, .fp-rank.unranked { color: var(--text-secondary); opacity: 0.4; }
+        .ktc-val.unranked, .fp-rank.unranked { color: #576068; }
         .pos-bar { display: flex; gap: 2px; margin-top: 0.5rem; height: 6px; border-radius: 3px; overflow: hidden; }
-        .pos-bar-seg { height: 100%; border-radius: 3px; }
+        .pos-bar-seg { height: 100%; border-radius: 3px; cursor: default; }
+
+        /* Shared floating tooltip for roster cards */
+        #rosterTooltip {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 9999;
+            background: #0f1923;
+            border: 1px solid rgba(0, 255, 184, 0.25);
+            border-radius: 8px;
+            padding: 8px 12px;
+            max-width: 240px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+            transition: opacity 0.15s ease;
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+        #rosterTooltip.visible { opacity: 1; }
+        #rosterTooltip .tip-title {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #00ffb8;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 3px;
+        }
+        #rosterTooltip .tip-body {
+            display: block;
+            font-size: 0.78rem;
+            color: #9ca3af;
+            font-weight: 400;
+        }
 
         /* DRAFT CAPITAL TAB */
         .dc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1.25rem; }
@@ -2116,16 +2199,14 @@
         .db-nfl-team {
             font-size: 0.57rem;
             font-weight: 600;
-            color: var(--text-secondary);
-            opacity: 0.65;
+            color: #7e868f;
             letter-spacing: 0.3px;
         }
 
         /* Owner tag below footer */
         .db-tile-owner-tag {
-            font-size: 0.56rem;
-            color: var(--text-secondary);
-            opacity: 0.55;
+            font-size: 0.625rem;
+            color: #737b85;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -2818,6 +2899,88 @@
         .manager-link:hover { color: var(--accent-teal); border-bottom-color: var(--accent-teal); }
 
         /* ══════════════════════════════════════════
+           RECAP — BY THE NUMBERS + STANDINGS
+           ══════════════════════════════════════════ */
+        .recap-stats-bar { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+        .recap-stat-item { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; text-align: center; }
+        .recap-stat-val { font-size: 1.25rem; font-weight: 800; color: var(--accent-teal); font-family: 'Courier New', monospace; }
+        .recap-stat-val.gold { color: var(--accent-gold); }
+        .recap-stat-val.danger { color: var(--danger); }
+        .recap-stat-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-top: 0.25rem; font-weight: 600; }
+        .recap-standings-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 2rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+        .recap-standings-table th { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 700; padding: 0.75rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border-color); background: var(--bg-tertiary); }
+        .recap-standings-table td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary); }
+        .recap-standings-table tr:last-child td { border-bottom: none; }
+        .recap-standings-table .rank-col { width: 2rem; text-align: center; color: var(--text-secondary); font-weight: 600; }
+        .recap-standings-table .owner-col { font-weight: 600; cursor: pointer; }
+        .recap-standings-table .owner-col:hover { color: var(--accent-teal); }
+        .recap-standings-table .record-col { font-family: 'Courier New', monospace; font-weight: 600; }
+        .recap-standings-table .pts-col { font-family: 'Courier New', monospace; color: var(--text-secondary); }
+        .recap-standings-table .champ-row td { background: rgba(255,215,0,0.06); }
+        .recap-standings-table .playoff-row td { background: rgba(0,212,170,0.04); }
+
+        /* ══════════════════════════════════════════
+           FULL TEAM PROFILE PAGE
+           ══════════════════════════════════════════ */
+        #teamprofile.tab-content { max-width: 1000px; margin: 0 auto; }
+        .tp-back-btn { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 1rem; color: var(--text-secondary); cursor: pointer; font-size: 0.82rem; font-family: 'Inter', sans-serif; font-weight: 600; transition: var(--transition); margin-bottom: 1.5rem; }
+        .tp-back-btn:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+        .tp-hero { background: linear-gradient(135deg, rgba(0,212,170,0.08) 0%, rgba(255,215,0,0.04) 100%); border: 1px solid var(--border-color); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+        .tp-hero-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--bg-tertiary); border: 2px solid var(--accent-teal); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; flex-shrink: 0; }
+        .tp-hero-info h2 { font-size: 1.75rem; font-weight: 800; color: var(--accent-teal); letter-spacing: -0.5px; margin-bottom: 0.15rem; }
+        .tp-hero-info .tp-team-name { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .tp-hero-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .tp-hero-badge { background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 20px; padding: 0.25rem 0.75rem; font-size: 0.72rem; color: var(--accent-gold); font-weight: 600; }
+        .tp-hero-stats { margin-left: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center; }
+        .tp-hero-stat-val { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); font-family: 'Courier New', monospace; }
+        .tp-hero-stat-lbl { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); font-weight: 600; }
+        .tp-section { margin-bottom: 2.5rem; }
+        .tp-section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.8px; color: var(--text-secondary); font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
+        .tp-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
+        .tp-stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem; }
+        .tp-stat-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 0.85rem; text-align: center; }
+        .tp-stat-card .val { font-size: 1.15rem; font-weight: 700; color: var(--accent-teal); font-family: 'Courier New', monospace; }
+        .tp-stat-card .lbl { font-size: 0.6rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; margin-top: 0.15rem; }
+        .tp-seasons-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        .tp-season-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; text-align: center; transition: var(--transition); position: relative; overflow: hidden; }
+        .tp-season-card:hover { border-color: var(--border-color-light); }
+        .tp-season-card .yr { font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .tp-season-card .rec { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); font-family: 'Courier New', monospace; margin: 0.3rem 0; }
+        .tp-season-card .pts { font-size: 0.82rem; color: var(--accent-teal); }
+        .tp-season-card .finish { font-size: 0.72rem; color: var(--accent-gold); margin-top: 0.35rem; font-weight: 600; }
+        .tp-season-card .rank-badge { position: absolute; top: 0.6rem; right: 0.6rem; font-size: 0.6rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.15rem 0.4rem; color: var(--text-secondary); font-weight: 600; }
+        .tp-chart-wrap { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; height: 280px; margin-bottom: 0.5rem; }
+        .tp-trade-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .tp-trade-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem 1.25rem; }
+        .tp-trade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+        .tp-trade-date { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
+        .tp-trade-partner { font-size: 0.82rem; color: var(--accent-teal); font-weight: 600; }
+        .tp-trade-sides { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.75rem; align-items: start; }
+        .tp-trade-side { font-size: 0.8rem; }
+        .tp-trade-side .side-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.3rem; }
+        .tp-trade-side .side-items { color: var(--text-primary); line-height: 1.6; }
+        .tp-trade-arrow { color: var(--text-secondary); font-size: 1.2rem; align-self: center; opacity: 0.4; }
+        .tp-waiver-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
+        .tp-waiver-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; }
+        .tp-waiver-card .wv-year { font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 0.4rem; }
+        .tp-waiver-card .wv-stats { display: flex; gap: 1rem; }
+        .tp-waiver-card .wv-stat { text-align: center; }
+        .tp-waiver-card .wv-val { font-size: 1.1rem; font-weight: 700; color: var(--accent-teal); font-family: 'Courier New', monospace; }
+        .tp-waiver-card .wv-lbl { font-size: 0.58rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; }
+        .tp-h2h-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.5rem; }
+        .tp-h2h-item { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: var(--transition); }
+        .tp-h2h-item:hover { border-color: var(--accent-teal); }
+        .tp-h2h-name { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tp-h2h-rec { font-size: 0.85rem; font-weight: 700; font-family: 'Courier New', monospace; flex-shrink: 0; }
+        .tp-h2h-rec.w { color: var(--success); }
+        .tp-h2h-rec.l { color: var(--danger); }
+        .tp-h2h-rec.e { color: var(--text-secondary); }
+        .tp-dc-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .tp-dc-pick { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.35rem 0.7rem; font-size: 0.75rem; color: var(--text-primary); font-weight: 500; }
+        .tp-dc-pick.traded { color: var(--danger); text-decoration: line-through; opacity: 0.6; }
+        .tp-empty { color: var(--text-secondary); font-size: 0.85rem; font-style: italic; padding: 1rem 0; }
+
+        /* ══════════════════════════════════════════
            CONTENDER / REBUILDER QUADRANT
            ══════════════════════════════════════════ */
         .quadrant-wrap { position: relative; margin-top: 2rem; }
@@ -2883,6 +3046,7 @@
         <div class="hero-container">
             <h1>Til Death do us Part</h1>
             <p class="hero-subtitle">Dynasty Fantasy Football | Est. 2023 | 12 Teams | Half-PPR</p>
+            <p style="font-size: 0.7rem; color: #6b7280; margin-top: 0.35rem;">Data as of: Week 14, 2025 Season | Scoring: <a href="https://sleeper.com" target="_blank" style="color: #6b7280; text-decoration: underline;">Sleeper</a> | Player Values: <a href="https://keeptradecut.com" target="_blank" style="color: #6b7280; text-decoration: underline;">KeepTradeCut</a></p>
 
             <div class="champions-grid">
                 <div class="champion-card">
@@ -2949,7 +3113,14 @@
 
         <!-- STANDINGS TAB -->
         <div id="standings" class="tab-content">
-            <h2 class="section-header">All-Time Standings</h2>
+            <h2 class="section-header" id="standingsHeader">All-Time Standings</h2>
+
+            <div class="standings-filter-bar" style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+                <button class="transactions-filter-btn standings-season-btn active" data-season="all">All Time</button>
+                <button class="transactions-filter-btn standings-season-btn" data-season="2025">2025</button>
+                <button class="transactions-filter-btn standings-season-btn" data-season="2024">2024</button>
+                <button class="transactions-filter-btn standings-season-btn" data-season="2023">2023</button>
+            </div>
 
             <div class="table-container">
                 <table id="standingsTable">
@@ -3105,7 +3276,7 @@
                     </div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">⚠️ Points Left on the Table</div>
+                    <div class="chart-title">⚠️ Max PF Breakdown: Actual vs. Bench Points</div>
                     <div class="chart-content">
                         <canvas id="maxPfChart"></canvas>
                     </div>
@@ -3403,7 +3574,7 @@
         <div id="draftcapital" class="tab-content">
             <h2 class="section-header">Draft Capital Inventory</h2>
             <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">Future draft pick holdings for 2026-2028. Valued using KTC crowdsourced dynasty trade values (1QB, 0.5 PPR, 12-team).</p>
-            <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.85rem; opacity: 0.75; font-style: italic;">I know KTC isn't perfect or maybe even good, but its the best we got.</p>
+            <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.85rem; opacity: 0.75; font-style: italic;">I know KTC isn't perfect or maybe even good, but its the best we got. Draft pick values reduced 10% from raw KTC (picks tend to be overvalued).</p>
             <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.75rem; opacity: 0.7;">2026 picks projected as Early (picks 1-4), Mid (5-8), or Late (9-12) based on 2025 season record. 2027-2028 picks default to Mid projection.</p>
             <div style="margin-bottom: 2rem;">
                 <div class="chart-container" style="height: 350px;">
@@ -3580,10 +3751,18 @@
                 </div>
             </div>
         </div>
+
+        <!-- TEAM PROFILE (full page, hidden tab) -->
+        <div id="teamprofile" class="tab-content">
+            <div id="tpContent"></div>
+        </div>
     </main>
 
     <!-- SCROLL TO TOP BUTTON -->
     <button class="scroll-to-top" id="scrollToTop">↑</button>
+
+    <!-- Floating tooltip for roster cards -->
+    <div id="rosterTooltip"></div>
 
     <!-- TEAM PROFILE MODAL -->
     <div class="profile-modal-overlay" id="teamProfileModal">
@@ -3617,7 +3796,7 @@
         const allTimeData = {
             "nendy": {"team_name":"pedick","total_wins":30,"total_losses":12,"total_fpts":5375.46,"total_fpts_against":4408.6,"total_ppts":6252.4,"avg_score":"127.99","max_week":"185.10","min_week":"80.74","median":"130.14","stdev":"23.99","manager_efficiency":"86.0","win_pct":"71.4","seasons":{"2023":{"wins":11,"losses":3,"fpts":1722.88,"ppts":2076.72,"fpts_against":1438.08},"2024":{"wins":8,"losses":6,"fpts":1816.08,"ppts":2084.44,"fpts_against":1585.56},"2025":{"wins":11,"losses":3,"fpts":1836.5,"ppts":2091.24,"fpts_against":1384.96}}},
             "shaqdeezy": {"team_name":"Nabers Know My Name","total_wins":16,"total_losses":26,"total_fpts":4138.3,"total_fpts_against":4532.76,"total_ppts":5190.04,"avg_score":"98.55","max_week":"160.74","min_week":"45.52","median":"99.09","stdev":"25.26","manager_efficiency":"79.7","win_pct":"38.1","seasons":{"2023":{"wins":3,"losses":11,"fpts":977.6,"ppts":1508.72,"fpts_against":1460.92},"2024":{"wins":8,"losses":6,"fpts":1700.88,"ppts":1888.78,"fpts_against":1521.08},"2025":{"wins":5,"losses":9,"fpts":1459.82,"ppts":1792.54,"fpts_against":1550.76}}},
-            "MrEton": {"team_name":"MrEton","total_wins":21,"total_losses":21,"total_fpts":4451.7,"total_fpts_against":4277.48,"total_ppts":5214.82,"avg_score":"105.99","max_week":"176.00","min_week":"32.20","median":"108.06","stdev":"30.08","manager_efficiency":"85.4","win_pct":"50.0","seasons":{"2023":{"wins":5,"losses":9,"fpts":1250.98,"ppts":1538.18,"fpts_against":1566.12},"2024":{"wins":12,"losses":2,"fpts":1806.78,"ppts":2042.82,"fpts_against":1345.74},"2025":{"wins":4,"losses":10,"fpts":1393.94,"ppts":1633.82,"fpts_against":1366.62}}},
+            "MrEton": {"team_name":"MrEton","total_wins":21,"total_losses":21,"total_fpts":4451.7,"total_fpts_against":4278.48,"total_ppts":5214.82,"avg_score":"105.99","max_week":"176.00","min_week":"32.20","median":"108.06","stdev":"30.08","manager_efficiency":"85.4","win_pct":"50.0","seasons":{"2023":{"wins":5,"losses":9,"fpts":1250.98,"ppts":1538.18,"fpts_against":1566.12},"2024":{"wins":12,"losses":2,"fpts":1806.78,"ppts":2042.82,"fpts_against":1345.74},"2025":{"wins":4,"losses":10,"fpts":1393.94,"ppts":1633.82,"fpts_against":1366.62}}},
             "jakeschwartz": {"team_name":"jakeschwartz","total_wins":21,"total_losses":21,"total_fpts":4441.22,"total_fpts_against":4642.66,"total_ppts":5541.12,"avg_score":"105.74","max_week":"166.34","min_week":"55.56","median":"108.69","stdev":"24.01","manager_efficiency":"80.2","win_pct":"50.0","seasons":{"2023":{"wins":5,"losses":9,"fpts":1361.64,"ppts":1767.5,"fpts_against":1476.92},"2024":{"wins":9,"losses":5,"fpts":1531.28,"ppts":1828.74,"fpts_against":1495.48},"2025":{"wins":7,"losses":7,"fpts":1548.3,"ppts":1944.88,"fpts_against":1670.26}}},
             "andrewmcorral": {"team_name":"Olave Garden Hurts My Ass","total_wins":24,"total_losses":18,"total_fpts":4894.22,"total_fpts_against":4377.44,"total_ppts":5774.16,"avg_score":"116.53","max_week":"172.36","min_week":"72.56","median":"115.72","stdev":"21.53","manager_efficiency":"84.8","win_pct":"57.1","seasons":{"2023":{"wins":7,"losses":7,"fpts":1557.66,"ppts":1859.42,"fpts_against":1544.48},"2024":{"wins":6,"losses":8,"fpts":1556.74,"ppts":1858.18,"fpts_against":1491.96},"2025":{"wins":11,"losses":3,"fpts":1779.82,"ppts":2056.56,"fpts_against":1341}}},
             "doyersbeast": {"team_name":"Tanked for a chip","total_wins":22,"total_losses":20,"total_fpts":4523.06,"total_fpts_against":4435.14,"total_ppts":5515.24,"avg_score":"107.69","max_week":"180.50","min_week":"53.54","median":"107.52","stdev":"28.33","manager_efficiency":"82.0","win_pct":"52.4","seasons":{"2023":{"wins":5,"losses":9,"fpts":1241.88,"ppts":1675.06,"fpts_against":1540.52},"2024":{"wins":7,"losses":7,"fpts":1607.88,"ppts":1914.52,"fpts_against":1478.9},"2025":{"wins":10,"losses":4,"fpts":1673.3,"ppts":1925.66,"fpts_against":1415.72}}},
@@ -3768,12 +3947,20 @@
         // Deep link: activate tab from URL hash on page load
         (function() {
             const hash = window.location.hash.replace('#', '');
+            if (hash && hash.startsWith('profile-')) {
+                const owner = hash.replace('profile-', '');
+                if (allTimeData[owner]) { setTimeout(() => openTeamProfile(owner), 100); return; }
+            }
             if (hash) switchToTab(hash);
         })();
 
         // Back/forward: switch tab without pushing new history
         window.addEventListener('popstate', function() {
             const hash = window.location.hash.replace('#', '');
+            if (hash && hash.startsWith('profile-')) {
+                const owner = hash.replace('profile-', '');
+                if (allTimeData[owner]) { openTeamProfile(owner); return; }
+            }
             switchToTab(hash || 'overview');
         });
 
@@ -3793,6 +3980,31 @@
         // STANDINGS TABLE — Sortable
         let currentSortCol = 'win_pct';
         let currentSortDir = 'desc';
+        let currentStandingsSeason = 'all';
+
+        // Build per-season display data from allTimeData seasons
+        function getSeasonDisplayData(owner, season) {
+            const raw = allTimeData[owner];
+            if (season === 'all') return raw;
+            const s = raw.seasons[season];
+            if (!s) return null;
+            const totalGames = s.wins + s.losses;
+            const winPct = totalGames > 0 ? ((s.wins / totalGames) * 100).toFixed(1) : '0.0';
+            const mgrEff = s.ppts > 0 ? ((s.fpts / s.ppts) * 100).toFixed(1) : '0.0';
+            const avgScore = totalGames > 0 ? (s.fpts / totalGames).toFixed(2) : '0.00';
+            return {
+                team_name: raw.team_name,
+                total_wins: s.wins,
+                total_losses: s.losses,
+                total_fpts: s.fpts,
+                total_fpts_against: s.fpts_against,
+                total_ppts: s.ppts,
+                win_pct: winPct,
+                manager_efficiency: mgrEff,
+                avg_score: avgScore,
+                stdev: raw.stdev // per-season stdev not available, fall back to all-time
+            };
+        }
 
         const columnDefs = [
             { key: 'rank', label: 'Rank', getValue: () => 0 },
@@ -3814,12 +4026,30 @@
             currentSortCol = sortKey;
             currentSortDir = sortDir;
 
+            const season = currentStandingsSeason;
+
+            // Build display data map for the selected season
+            const displayData = {};
+            Object.keys(allTimeData).forEach(owner => {
+                const d = getSeasonDisplayData(owner, season);
+                if (d) displayData[owner] = d;
+            });
+
             const colDef = columnDefs.find(c => c.key === sortKey);
-            const owners = Object.keys(allTimeData).sort((a, b) => {
-                const aVal = colDef.getValue(allTimeData[a], a);
-                const bVal = colDef.getValue(allTimeData[b], b);
+            const owners = Object.keys(displayData).sort((a, b) => {
+                const aVal = colDef.getValue(displayData[a], a);
+                const bVal = colDef.getValue(displayData[b], b);
                 if (typeof aVal === 'string') return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-                return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+                const primary = sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+                if (primary !== 0) return primary;
+                // Tiebreaker 1: PF (higher is better)
+                const aPF = parseFloat(displayData[a].total_fpts);
+                const bPF = parseFloat(displayData[b].total_fpts);
+                if (aPF !== bPF) return bPF - aPF;
+                // Tiebreaker 2: H2H record between tied managers
+                const h2h = h2hData[a]?.[b];
+                if (h2h && h2h.wins !== h2h.losses) return h2h.losses - h2h.wins;
+                return 0;
             });
 
             // Update header arrows
@@ -3832,11 +4062,15 @@
                 }
             });
 
+            // Update header text
+            const headerEl = document.getElementById('standingsHeader');
+            headerEl.textContent = season === 'all' ? 'All-Time Standings' : season + ' Season Standings';
+
             const tbody = document.getElementById('standingsBody');
             tbody.innerHTML = '';
 
             owners.forEach((owner, idx) => {
-                const data = allTimeData[owner];
+                const data = displayData[owner];
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><span class="rank-number">${idx + 1}</span></td>
@@ -3858,11 +4092,21 @@
             });
         }
 
+        // Season filter button handlers
+        document.querySelectorAll('.standings-season-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.standings-season-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentStandingsSeason = btn.dataset.season;
+                populateStandings(currentSortCol, currentSortDir);
+            });
+        });
+
         const columnTooltips = {
             rank:        { title: 'Rank',        body: 'Overall all-time rank based on the current sort column.' },
             owner:       { title: 'Owner / Team', body: 'Manager name and their current team name.' },
-            wins:        { title: 'Wins (W)',     body: 'Total regular season + playoff wins across all seasons.' },
-            losses:      { title: 'Losses (L)',   body: 'Total regular season + playoff losses across all seasons.' },
+            wins:        { title: 'Wins (W)',     body: 'Total regular season wins across all seasons.' },
+            losses:      { title: 'Losses (L)',   body: 'Total regular season losses across all seasons.' },
             win_pct:     { title: 'Win %',        body: 'Wins divided by total games played. The primary ranking stat.' },
             fpts:        { title: 'Points For (PF)', body: 'Total fantasy points scored across all games.' },
             fpts_against:{ title: 'Points Against (PA)', body: 'Total fantasy points scored against this manager.' },
@@ -3896,28 +4140,43 @@
         //  • Pick uncertainty discount (future picks are inherently riskier)
         //  • Roster construction bonus (elite player > sum of lesser parts)
         //  • Time decay (older trades evaluated at today's values = hindsight grading)
-        function getAssetKTC(assetName) {
-            // Check if it's a draft pick
-            const pickMatch = assetName.match(/^(\d{4})\s+R(\d)$/);
-            if (pickMatch) {
-                const year = pickMatch[1];
-                const round = pickMatch[2];
+        function getAssetKTC(assetName, originalOwner) {
+            // Check if it's a future draft pick (e.g., "2026 R1")
+            const futurePickMatch = assetName.match(/^(\d{4})\s+R(\d)$/);
+            if (futurePickMatch) {
+                const year = futurePickMatch[1];
+                const round = futurePickMatch[2];
                 const roundName = round === '1' ? '1st' : round === '2' ? '2nd' : round === '3' ? '3rd' : '4th';
-                // Use "Mid" tier as default for traded picks (no owner context)
-                const key = 'Mid ' + roundName;
+                // Use projected tier from original owner when available; fall back to Mid
+                let tier = 'Mid';
+                if (originalOwner && year === '2026' && pickProjection2026[originalOwner]) {
+                    tier = pickProjection2026[originalOwner].tier;
+                }
+                const key = tier + ' ' + roundName;
                 const closestYear = Object.keys(ktcPickValues[key] || {}).sort((a,b) => Math.abs(a - year) - Math.abs(b - year))[0];
                 let val = ktcPickValues[key]?.[closestYear] || 0;
-                // Future pick uncertainty discount: 5% per year out
                 const yearsOut = Math.max(0, parseInt(year) - 2025);
                 val *= (1 - yearsOut * 0.05);
                 return Math.round(val);
+            }
+            // Check if it's an exact past draft pick (e.g., "2024 1.12" or "2025 2.01")
+            const exactPickMatch = assetName.match(/^(\d{4})\s+(\d+)\.(\d+)$/);
+            if (exactPickMatch) {
+                const year = exactPickMatch[1];
+                const round = exactPickMatch[2];
+                const slot = parseInt(exactPickMatch[3]);
+                const roundName = round === '1' ? '1st' : round === '2' ? '2nd' : round === '3' ? '3rd' : '4th';
+                const tier = slot <= 4 ? 'Early' : slot <= 8 ? 'Mid' : 'Late';
+                const key = tier + ' ' + roundName;
+                const closestYear = Object.keys(ktcPickValues[key] || {}).sort((a,b) => Math.abs(a - year) - Math.abs(b - year))[0];
+                return ktcPickValues[key]?.[closestYear] || 0;
             }
             // It's a player
             const n = assetName.trim();
             return ktcData[n]?.[0] || ktcData[normalizeName(n)]?.[0] || 0;
         }
 
-        function gradeTrade(sides) {
+        function gradeTrade(sides, timestamp) {
             const teams = Object.keys(sides);
             const results = {};
 
@@ -3933,14 +4192,46 @@
             // The trade winner is whoever has the higher sum of rawAdj, not raw KTC.
             // Grade % = (rawAdjGot - rawAdjGave) / avg(rawAdjGot, rawAdjGave) × 100
 
+            // Build pick ownership map at trade time to resolve original owners (tier-aware valuation)
+            let ownershipMap = null;
+            if (timestamp && typeof buildPickOwnershipMap === 'function') {
+                ownershipMap = buildPickOwnershipMap(timestamp);
+            }
+
+            // Pre-resolve original owners for all future picks in this trade.
+            // Each team's "gave" items = picks that team held before the trade.
+            // Map: "giverTeam|asset" -> originalOwner
+            const pickOwners = {};
+            if (ownershipMap) {
+                teams.forEach(team => {
+                    (sides[team].gave || []).forEach(asset => {
+                        const m = asset.match(/^(\d{4})\s+R(\d)$/);
+                        if (m) {
+                            pickOwners[team + '|' + asset] = resolvePickOriginalOwner(ownershipMap, team, m[1], m[2]);
+                        }
+                    });
+                });
+            }
+
+            // Tier-aware asset valuation: looks up original owner for future picks
+            function getVal(asset, holderTeam) {
+                const origOwner = pickOwners[holderTeam + '|' + asset];
+                return getAssetKTC(asset, origOwner);
+            }
+
             const allKtcVals = Object.values(ktcValues).map(e => e[0]);
             const v = Math.max(...allKtcVals); // best player overall
 
-            // Best player in this specific trade
+            // Best player in this specific trade (using tier-aware values)
             let t = 0;
             teams.forEach(team => {
-                [...sides[team].got, ...sides[team].gave].forEach(a => {
-                    const val = getAssetKTC(a);
+                const otherTeam = teams.find(x => x !== team);
+                sides[team].got.forEach(a => {
+                    const val = getVal(a, otherTeam); // got items came from the other team
+                    if (val > t) t = val;
+                });
+                sides[team].gave.forEach(a => {
+                    const val = getVal(a, team); // gave items were held by this team
                     if (val > t) t = val;
                 });
             });
@@ -3956,11 +4247,15 @@
                 );
             }
 
+            // Store the pickOwners map on results so renderAssets can use it
+            results._pickOwners = pickOwners;
+
             teams.forEach(team => {
-                const gotVal      = sides[team].got.reduce((s, a) => s + getAssetKTC(a), 0);
-                const gaveVal     = sides[team].gave.reduce((s, a) => s + getAssetKTC(a), 0);
-                const rawAdjGot   = sides[team].got.reduce((s, a) => s + rawAdj(getAssetKTC(a)), 0);
-                const rawAdjGave  = sides[team].gave.reduce((s, a) => s + rawAdj(getAssetKTC(a)), 0);
+                const otherTeam = teams.find(x => x !== team);
+                const gotVal      = sides[team].got.reduce((s, a) => s + getVal(a, otherTeam), 0);
+                const gaveVal     = sides[team].gave.reduce((s, a) => s + getVal(a, team), 0);
+                const rawAdjGot   = sides[team].got.reduce((s, a) => s + rawAdj(getVal(a, otherTeam)), 0);
+                const rawAdjGave  = sides[team].gave.reduce((s, a) => s + rawAdj(getVal(a, team)), 0);
 
                 const diff    = rawAdjGot - rawAdjGave;
                 const avgAdj  = (rawAdjGot + rawAdjGave) / 2 || 1;
@@ -3982,26 +4277,82 @@
             return results;
         }
 
+        // Build a map of pick ownership at a given timestamp by walking trades chronologically.
+        // Returns: { "2026_1": { ownerName: [originalOwner1, ...], ... }, "2026_2": { ... }, ... }
+        // Each team starts owning their own pick per round/year. Trades transfer ownership.
+        function buildPickOwnershipMap(upToTimestamp) {
+            const allOwners = Object.keys(pickProjection2026);
+            const years = ['2026', '2027', '2028'];
+            const rounds = ['1', '2', '3', '4'];
+
+            const map = {};
+            for (const y of years) {
+                for (const r of rounds) {
+                    const key = y + '_' + r;
+                    map[key] = {};
+                    allOwners.forEach(o => { map[key][o] = [o]; });
+                }
+            }
+
+            const sortedTrades = [...transactionData.trades].sort((a, b) => a[2] - b[2]);
+            for (const trade of sortedTrades) {
+                if (trade[2] >= upToTimestamp) break;
+                const sides = trade[3];
+                const teams = Object.keys(sides);
+                if (teams.length !== 2) continue;
+
+                // Collect all future-pick transfers: [giver, receiver, yearRoundKey]
+                const transfers = [];
+                teams.forEach(giver => {
+                    const receiver = teams.find(t => t !== giver);
+                    (sides[giver].gave || []).forEach(asset => {
+                        const m = asset.match(/^(\d{4})\s+R(\d)$/);
+                        if (m) transfers.push([giver, receiver, m[1] + '_' + m[2]]);
+                    });
+                });
+
+                // Execute transfers (process all before modifying, to avoid order issues)
+                transfers.forEach(([giver, receiver, key]) => {
+                    if (map[key] && map[key][giver] && map[key][giver].length > 0) {
+                        const transferred = map[key][giver].shift();
+                        if (!map[key][receiver]) map[key][receiver] = [];
+                        map[key][receiver].push(transferred);
+                    }
+                });
+            }
+
+            return map;
+        }
+
+        // Resolve the original owner of a future pick held by `currentHolder` at `timestamp`
+        function resolvePickOriginalOwner(ownershipMap, currentHolder, year, round) {
+            const key = year + '_' + round;
+            if (ownershipMap[key] && ownershipMap[key][currentHolder] && ownershipMap[key][currentHolder].length > 0) {
+                return ownershipMap[key][currentHolder][0];
+            }
+            return currentHolder; // fallback: assume it's their own pick
+        }
+
         // TRANSACTIONS DATA — each trade: [year, week, timestamp, {owner: {got:[...], gave:[...]}}]
         const transactionData = {
           trades: [
-            [2023,10,1700026992695,{"nendy":{got:["C.J. Stroud"],gave:["Khalil Herbert","2024 R1","2024 R3"]},"doyersbeast":{got:["Khalil Herbert","2024 R1","2024 R3"],gave:["C.J. Stroud"]}}],
-            [2023,11,1700108943380,{"jakeschwartz":{got:["2024 R2"],gave:["James Conner"]},"andrewmcorral":{got:["James Conner"],gave:["2024 R2"]}}],
-            [2024,1,1724304395594,{"nendy":{got:["David Njoku","Romeo Doubs","2025 R3"],gave:["Terry McLaurin"]},"nsbarbarino":{got:["Terry McLaurin"],gave:["David Njoku","Romeo Doubs","2025 R3"]}}],
-            [2024,1,1724267180201,{"nendy":{got:["Jaxon Smith-Njigba"],gave:["Jayden Reed","2025 R2"]},"bradysballzfdf":{got:["Jayden Reed","2025 R2"],gave:["Jaxon Smith-Njigba"]}}],
-            [2024,1,1723412501066,{"nendy":{got:["2025 R1"],gave:["2025 R1"]},"DeezNutz02":{got:["2025 R1"],gave:["2025 R1"]}}],
-            [2024,1,1716143566365,{"andrewmcorral":{got:["2024 R1","2024 R3"],gave:["Jahan Dotson","Marvin Mims","2024 R1"]},"nsbarbarino":{got:["Jahan Dotson","Marvin Mims","2024 R1"],gave:["2024 R1","2024 R3"]}}],
-            [2024,3,1726847501456,{"andrewmcorral":{got:["Christian McCaffrey"],gave:["2025 R1","2025 R2"]},"JustinG66":{got:["2025 R1","2025 R2"],gave:["Christian McCaffrey"]}}],
-            [2024,5,1728409677840,{"SweetSweet":{got:["Jaylen Waddle","2025 R1","2026 R1","2026 R2","2027 R1"],gave:["Josh Jacobs","CeeDee Lamb"]},"DeezNutz02":{got:["Josh Jacobs","CeeDee Lamb"],gave:["Jaylen Waddle","2025 R1","2026 R1","2026 R2","2027 R1"]}}],
-            [2024,5,1727996893559,{"MrEton":{got:["Tyreek Hill","2025 R2"],gave:["Jonathon Brooks","2026 R1"]},"bradysballzfdf":{got:["Jonathon Brooks","2026 R1"],gave:["Tyreek Hill","2025 R2"]}}],
+            [2023,10,1700026992695,{"nendy":{got:["C.J. Stroud"],gave:["Khalil Herbert","2024 1.12","2024 3.12"]},"doyersbeast":{got:["Khalil Herbert","2024 1.12","2024 3.12"],gave:["C.J. Stroud"]}}],
+            [2023,11,1700108943380,{"jakeschwartz":{got:["2024 2.11"],gave:["James Conner"]},"andrewmcorral":{got:["James Conner"],gave:["2024 2.11"]}}],
+            [2024,1,1724304395594,{"nendy":{got:["David Njoku","Romeo Doubs","2025 3.05"],gave:["Terry McLaurin"]},"nsbarbarino":{got:["Terry McLaurin"],gave:["David Njoku","Romeo Doubs","2025 3.05"]}}],
+            [2024,1,1724267180201,{"nendy":{got:["Jaxon Smith-Njigba"],gave:["Jayden Reed","2025 2.11"]},"bradysballzfdf":{got:["Jayden Reed","2025 2.11"],gave:["Jaxon Smith-Njigba"]}}],
+            [2024,1,1723412501066,{"nendy":{got:["2025 1.04"],gave:["2025 1.11"]},"DeezNutz02":{got:["2025 1.11"],gave:["2025 1.04"]}}],
+            [2024,1,1716143566365,{"andrewmcorral":{got:["2024 1.05","2024 3.05"],gave:["Jahan Dotson","Marvin Mims","2024 1.11"]},"nsbarbarino":{got:["Jahan Dotson","Marvin Mims","2024 1.11"],gave:["2024 1.05","2024 3.05"]}}],
+            [2024,3,1726847501456,{"andrewmcorral":{got:["Christian McCaffrey"],gave:["2025 1.09","2025 2.09"]},"JustinG66":{got:["2025 1.09","2025 2.09"],gave:["Christian McCaffrey"]}}],
+            [2024,5,1728409677840,{"SweetSweet":{got:["Jaylen Waddle","2025 1.11","2026 R1","2026 R2","2027 R1"],gave:["Josh Jacobs","CeeDee Lamb"]},"DeezNutz02":{got:["Josh Jacobs","CeeDee Lamb"],gave:["Jaylen Waddle","2025 1.11","2026 R1","2026 R2","2027 R1"]}}],
+            [2024,5,1727996893559,{"MrEton":{got:["Tyreek Hill","2025 2.01"],gave:["Jonathon Brooks","2026 R1"]},"bradysballzfdf":{got:["Jonathon Brooks","2026 R1"],gave:["Tyreek Hill","2025 2.01"]}}],
             [2024,10,1731096251492,{"andrewmcorral":{got:["DeAndre Hopkins"],gave:["Kendre Miller","2026 R2"]},"doyersbeast":{got:["Kendre Miller","2026 R2"],gave:["DeAndre Hopkins"]}}],
             [2024,10,1730927264138,{"MrEton":{got:["George Kittle"],gave:["2026 R2","2027 R1"]},"doyersbeast":{got:["2026 R2","2027 R1"],gave:["George Kittle"]}}],
             [2024,11,1731615180312,{"shaqdeezy":{got:["Isiah Pacheco"],gave:["DeMario Douglas","Keaton Mitchell","2026 R1"]},"JustinG66":{got:["DeMario Douglas","Keaton Mitchell","2026 R1"],gave:["Isiah Pacheco"]}}],
             [2025,1,1756088747007,{"shaqdeezy":{got:["Jerry Jeudy"],gave:["Brandon Aiyuk"]},"SweetSweet":{got:["Brandon Aiyuk"],gave:["Jerry Jeudy"]}}],
-            [2025,1,1747951993619,{"MrEton":{got:["2025 R3","2026 R3"],gave:["2025 R2"]},"SweetSweet":{got:["2025 R2"],gave:["2025 R3","2026 R3"]}}],
-            [2025,1,1747781240777,{"MrEton":{got:["2026 R2","2025 R2","2026 R2"],gave:["2025 R2"]},"doyersbeast":{got:["2025 R2"],gave:["2026 R2","2025 R2","2026 R2"]}}],
-            [2025,1,1747523460572,{"doyersbeast":{got:["2025 R1"],gave:["Marvin Harrison","2025 R1","2026 R1"]},"bradysballzfdf":{got:["Marvin Harrison","2025 R1","2026 R1"],gave:["2025 R1"]}}],
-            [2025,1,1747153948466,{"nendy":{got:["2025 R1","2026 R3"],gave:["2026 R2","2025 R1"]},"JustinG66":{got:["2026 R2","2025 R1"],gave:["2025 R1","2026 R3"]}}],
+            [2025,1,1747951993619,{"MrEton":{got:["2025 3.02","2026 R3"],gave:["2025 2.12"]},"SweetSweet":{got:["2025 2.12"],gave:["2025 3.02","2026 R3"]}}],
+            [2025,1,1747781240777,{"MrEton":{got:["2026 R2","2025 2.06","2026 R2"],gave:["2025 2.01"]},"doyersbeast":{got:["2025 2.01"],gave:["2026 R2","2025 2.06","2026 R2"]}}],
+            [2025,1,1747523460572,{"doyersbeast":{got:["2025 1.01"],gave:["Marvin Harrison","2025 1.06","2026 R1"]},"bradysballzfdf":{got:["Marvin Harrison","2025 1.06","2026 R1"],gave:["2025 1.01"]}}],
+            [2025,1,1747153948466,{"nendy":{got:["2025 1.03","2026 R3"],gave:["2026 R2","2025 1.04"]},"JustinG66":{got:["2026 R2","2025 1.04"],gave:["2025 1.03","2026 R3"]}}],
             [2025,2,1757540664209,{"nsbarbarino":{got:["Chuba Hubbard"],gave:["Tank Bigsby","2026 R2"]},"grffnboss":{got:["Tank Bigsby","2026 R2"],gave:["Chuba Hubbard"]}}],
             [2025,2,1757538459435,{"nendy":{got:["Josh Allen"],gave:["Anthony Richardson","2026 R1","2027 R2"]},"grffnboss":{got:["Anthony Richardson","2026 R1","2027 R2"],gave:["Josh Allen"]}}],
             [2025,8,1761670635242,{"MrEton":{got:["2026 R2","2027 R1","2027 R2"],gave:["Derrick Henry","George Kittle"]},"doyersbeast":{got:["Derrick Henry","George Kittle"],gave:["2026 R2","2027 R1","2027 R2"]}}],
@@ -4157,6 +4508,11 @@
                     })
                     .sort((a, b) => b[2] - a[2]); // Sort by timestamp descending (newest first)
 
+                if (filteredTrades.length === 0) {
+                    listContainer.innerHTML = '<div style="text-align:center;padding:3rem 1rem;color:#6b7280;font-size:0.9rem;">No trades match these filters. Try a different year or type.</div>';
+                    return;
+                }
+
                 filteredTrades.forEach(trade => {
                     const [year, week, timestamp, sides] = trade;
                     const date = new Date(timestamp);
@@ -4166,8 +4522,10 @@
                     const team1 = teams[0], team2 = teams[1];
 
                     // Compute trade grades
-                    const grades = gradeTrade(sides);
+                    // Compute trade grades (pass timestamp for tier-aware pick valuation)
+                    const grades = gradeTrade(sides, timestamp);
                     const g1 = grades[team1], g2 = grades[team2];
+                    const pickOwners = grades._pickOwners || {};
 
                     const tradeCard = document.createElement('div');
                     tradeCard.className = 'trade-card';
@@ -4181,10 +4539,11 @@
                         </div>
                     `;
 
-                    const renderAssets = (assetsArr) => {
+                    const renderAssets = (assetsArr, holderTeam) => {
                         return assetsArr.map(asset => {
-                            const isPick = /^\d{4}\s+R\d$/.test(asset);
-                            const ktcVal = getAssetKTC(asset);
+                            const isPick = /^\d{4}\s+(R\d|\d+\.\d+)$/.test(asset);
+                            const origOwner = pickOwners[holderTeam + '|' + asset];
+                            const ktcVal = getAssetKTC(asset, origOwner);
                             const ktcStr = ktcVal > 0 ? `<span class="trade-grade-val">${(ktcVal/1000).toFixed(1)}k</span>` : '';
                             return `<div class="trade-asset ${isPick ? 'draft-pick' : 'player'}"><span>${asset}</span>${ktcStr}</div>`;
                         }).join('');
@@ -4206,7 +4565,7 @@
                                     <span class="trade-side-ktc">${(g1.gotVal/1000).toFixed(1)}k KTC</span>
                                 </div>
                                 <div class="trade-side-assets">
-                                    ${renderAssets(sides[team1].got)}
+                                    ${renderAssets(sides[team1].got, team2)}
                                 </div>
                             </div>
                             <div class="trade-divider">
@@ -4218,7 +4577,7 @@
                                     <span class="trade-side-ktc">${(g2.gotVal/1000).toFixed(1)}k KTC</span>
                                 </div>
                                 <div class="trade-side-assets">
-                                    ${renderAssets(sides[team2].got)}
+                                    ${renderAssets(sides[team2].got, team1)}
                                 </div>
                             </div>
                         </div>
@@ -4737,6 +5096,7 @@
                         y: {
                             type: 'linear',
                             position: 'left',
+                            title: { display: true, text: 'Points', color: '#8b949e', font: { size: 11 } },
                             ticks: { color: colors.textSecondary },
                             grid: { color: colors.gridColor }
                         }
@@ -4753,6 +5113,7 @@
                 parseFloat(allTimeData[b].manager_efficiency) - parseFloat(allTimeData[a].manager_efficiency)
             );
             const effData = owners.map(owner => parseFloat(allTimeData[owner].manager_efficiency));
+            const effMin = Math.floor(Math.min(...effData)) - 2;
 
             mgrEffChart = new Chart(ctx, {
                 type: 'bar',
@@ -4773,8 +5134,10 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         x: {
+                            title: { display: true, text: 'Efficiency % (axis starts at ' + effMin + ')', color: '#8b949e', font: { size: 10 } },
                             ticks: { color: colors.textSecondary },
                             grid: { color: colors.gridColor },
+                            min: effMin,
                             max: 100
                         },
                         y: {
@@ -4790,12 +5153,14 @@
             const ctx = document.getElementById('yoyChangeChart');
             if (!ctx) return;
 
-            const owners = Object.keys(allTimeData);
-            const changeData = owners.map(owner => {
+            const unsortedOwners = Object.keys(allTimeData);
+            const ownerChanges = unsortedOwners.map(owner => {
                 const pf2024 = parseFloat(allTimeData[owner].seasons['2024'].fpts);
                 const pf2025 = parseFloat(allTimeData[owner].seasons['2025'].fpts);
-                return ((pf2025 - pf2024) / pf2024 * 100).toFixed(1);
-            }).map(x => parseFloat(x));
+                return { owner, change: parseFloat(((pf2025 - pf2024) / pf2024 * 100).toFixed(1)) };
+            }).sort((a, b) => b.change - a.change);
+            const owners = ownerChanges.map(o => o.owner);
+            const changeData = ownerChanges.map(o => o.change);
 
             yoyChangeChart = new Chart(ctx, {
                 type: 'bar',
@@ -5016,11 +5381,12 @@
 
         // ========== DRAFT CAPITAL DATA ==========
         // KTC crowdsourced pick values (1QB, 0.5 PPR, 12-team) - March 2026
+        // Reduced by 10% from raw KTC values (KTC overvalues draft picks)
         const ktcPickValues = {
-            "Early 1st":{"2026":6526,"2027":7072,"2028":5610},"Mid 1st":{"2026":5503,"2027":5890,"2028":5208},"Late 1st":{"2026":5032,"2027":5506,"2028":4771},
-            "Early 2nd":{"2026":4290,"2027":4613,"2028":3823},"Mid 2nd":{"2026":3829,"2027":4069,"2028":3569},"Late 2nd":{"2026":3584,"2027":3775,"2028":3403},
-            "Early 3rd":{"2026":2842,"2027":2915,"2028":2607},"Mid 3rd":{"2026":2689,"2027":2703,"2028":2391},"Late 3rd":{"2026":2536,"2027":2568,"2028":2256},
-            "Early 4th":{"2026":2080,"2027":2079,"2028":1862},"Mid 4th":{"2026":1931,"2027":1985,"2028":1707},"Late 4th":{"2026":1826,"2027":1866,"2028":1493}
+            "Early 1st":{"2026":5873,"2027":6365,"2028":5049},"Mid 1st":{"2026":4953,"2027":5301,"2028":4687},"Late 1st":{"2026":4529,"2027":4955,"2028":4294},
+            "Early 2nd":{"2026":3861,"2027":4152,"2028":3441},"Mid 2nd":{"2026":3446,"2027":3662,"2028":3212},"Late 2nd":{"2026":3226,"2027":3398,"2028":3063},
+            "Early 3rd":{"2026":2558,"2027":2624,"2028":2346},"Mid 3rd":{"2026":2420,"2027":2433,"2028":2152},"Late 3rd":{"2026":2282,"2027":2311,"2028":2030},
+            "Early 4th":{"2026":1872,"2027":1871,"2028":1676},"Mid 4th":{"2026":1738,"2027":1787,"2028":1536},"Late 4th":{"2026":1643,"2027":1679,"2028":1344}
         };
         // 2026 pick projection based on 2025 season record (worst record = earliest pick)
         const pickProjection2026 = {
@@ -5116,7 +5482,7 @@
                             <div class="pr-team-name">${team.team}</div>
                             <div class="pr-owner-name">${team.owner}</div>
                         </div>
-                        ${actualFinish ? `<div class="pr-actual-finish" style="color:${finishColor}" title="Preseason rank #${team.rank} → Playoff finish: ${finishLabel}">${finishLabel}<span style="font-weight:700">${diffLabel}</span></div>` : ''}
+                        ${actualFinish ? `<div class="pr-actual-finish" style="color:${finishColor}" data-tip-title="Actual Finish" data-tip="Preseason #${team.rank} → ${finishLabel}">${finishLabel}<span style="font-weight:700">${diffLabel}</span></div>` : ''}
                     </div>
                     <div class="pr-stats-row">
                         <div class="pr-stat">Avg Rank: <span>${team.avgRank || team.avgRank}</span></div>
@@ -5136,17 +5502,45 @@
             const grid = document.getElementById('analyticsGrid');
             if (!grid) return;
 
-            // Calculate luck factor: win_pct vs expected_win_pct (from max PF ranking)
+            // Schedule-Adjusted Luck: compare actual wins to expected wins
+            // based on weekly scoring rank (how many opponents you'd beat each week).
+            // Uses avg weekly PF per season to estimate weekly performance,
+            // then counts how many of the other 11 managers scored less.
             const owners = Object.keys(allTimeData);
+            const seasons = ['2023','2024','2025'];
+            // Build per-season avg weekly scores for each owner
+            const seasonAvgs = {};
+            seasons.forEach(yr => {
+                const avgs = {};
+                owners.forEach(o => {
+                    const s = allTimeData[o].seasons[yr];
+                    if (s) avgs[o] = s.fpts / (s.wins + s.losses);
+                });
+                seasonAvgs[yr] = avgs;
+            });
             const luckData = owners.map(owner => {
                 const d = allTimeData[owner];
-                const actualWinPct = parseFloat(d.win_pct);
+                const actualWins = d.total_wins;
                 const totalGames = d.total_wins + d.total_losses;
-                // Expected wins based on max PF rank
-                const maxPfRank = owners.sort((a,b) => parseFloat(allTimeData[b].total_ppts) - parseFloat(allTimeData[a].total_ppts)).indexOf(owner) + 1;
-                const expectedWinPct = ((12 - maxPfRank) / 11) * 100;
-                const luck = (actualWinPct - expectedWinPct).toFixed(1);
-                return { owner, actualWinPct, expectedWinPct: expectedWinPct.toFixed(1), luck, maxPfRank, mgrEff: d.manager_efficiency, stdev: d.stdev, avgScore: d.avg_score };
+                const actualWinPct = parseFloat(d.win_pct);
+                // Expected wins: for each season-week, count opponents you'd outscore
+                let expectedWins = 0;
+                seasons.forEach(yr => {
+                    const s = d.seasons[yr];
+                    if (!s) return;
+                    const gamesInSeason = s.wins + s.losses;
+                    const myAvg = s.fpts / gamesInSeason;
+                    // How many of the other 11 owners had a lower avg that season?
+                    const otherAvgs = owners.filter(o => o !== owner).map(o => {
+                        const os = allTimeData[o].seasons[yr];
+                        return os ? os.fpts / (os.wins + os.losses) : 0;
+                    });
+                    const winsPerWeek = otherAvgs.filter(a => myAvg > a).length / 11;
+                    expectedWins += winsPerWeek * gamesInSeason;
+                });
+                const expectedWinPct = (expectedWins / totalGames * 100).toFixed(1);
+                const luck = (actualWinPct - parseFloat(expectedWinPct)).toFixed(1);
+                return { owner, actualWinPct, expectedWinPct, expectedWins: expectedWins.toFixed(1), luck, mgrEff: d.manager_efficiency, stdev: d.stdev, avgScore: d.avg_score };
             });
 
             // Sort by luck
@@ -5171,9 +5565,9 @@
 
             grid.innerHTML = `
                 <div class="analytics-card">
-                    <h3>Luck Factor (Win% vs Expected Win%)<span class="stat-tip">Compares your actual win percentage to your expected win percentage based on Max PF rank. Teams ranked higher in Max PF are expected to win more. A positive number means you've won more than your roster strength suggests — you're running hot.</span></h3>
+                    <h3>Schedule-Adjusted Luck<span class="stat-tip">Compares your actual win% to your expected win% based on weekly scoring rank. Each week, you count how many opponents you would have beaten based on your average score that season. A positive number means you won more games than your scoring output deserved. Negative means your schedule cost you wins.</span></h3>
                     <table class="analytics-table">
-                        <thead><tr><th>Owner</th><th style="text-align:right">Win%</th><th style="text-align:right">Expected</th><th style="text-align:right">Luck</th></tr></thead>
+                        <thead><tr><th>Owner</th><th style="text-align:right">Win%</th><th style="text-align:right">Exp Win%</th><th style="text-align:right">Luck</th></tr></thead>
                         <tbody>${luckyTeams.map(t => `<tr><td>${t.owner}</td><td class="num">${t.actualWinPct}%</td><td class="num">${t.expectedWinPct}%</td><td class="num"><span class="insight-badge ${parseFloat(t.luck) > 5 ? 'positive' : parseFloat(t.luck) < -5 ? 'negative' : 'neutral'}">${parseFloat(t.luck) > 0 ? '+' : ''}${t.luck}%</span></td></tr>`).join('')}</tbody>
                     </table>
                 </div>
@@ -5229,7 +5623,7 @@
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-                    plugins: { legend: { display: false }, title: { display: true, text: 'Luck Factor: Actual Win% minus Expected Win% (based on Max PF)', color: colors.textColor, font: { size: 14 } } },
+                    plugins: { legend: { display: false }, title: { display: true, text: 'Schedule-Adjusted Luck: Actual Win% minus Expected Win% (based on scoring rank)', color: colors.textColor, font: { size: 14 } } },
                     scales: { x: { ticks: { color: colors.textSecondary, callback: v => v + '%' }, grid: { color: colors.gridColor } }, y: { ticks: { color: colors.textSecondary }, grid: { color: 'transparent' } } }
                 }
             });
@@ -5590,22 +5984,22 @@
                 const teamName = allTimeData[owner]?.team_name || owner;
                 const posColors = { QB: '#ff6b6b', RB: '#00d4aa', WR: '#4dabf7', TE: '#ffd700', K: '#9382ff', DEF: '#ff9500' };
                 const total = Object.values(r.posCounts).reduce((a,b) => a+b, 0);
-                const posBar = Object.entries(r.posCounts).map(([pos, count]) => `<div class="pos-bar-seg" style="width:${(count/total*100)}%;background:${posColors[pos] || '#666'}" title="${pos}: ${count}"></div>`).join('');
+                const posBar = Object.entries(r.posCounts).map(([pos, count]) => `<div class="pos-bar-seg" style="width:${(count/total*100)}%;background:${posColors[pos] || '#666'}" data-tip-title="${pos}" data-tip="${count} players"></div>`).join('');
 
                 const renderPlayers = (players, showHeader) => {
-                    const pfColHeader = pfDataLoaded ? '<span class="pf-val" title="Total fantasy points scored as a starter on this team (2023-2025)" style="cursor:help">PF</span>' : '<span class="pf-val loading" title="Loading from Sleeper...">PF</span>';
-                    const header = showHeader ? `<div class="roster-player roster-col-header"><span class="pos"></span><span class="name"></span><span class="player-vals">${pfColHeader}<span class="ktc-val" title="KeepTradeCut dynasty value (1QB, 0.5 PPR) — Pulled Mar 18, 2026" style="cursor:help">KTC</span><span class="fp-rank" title="FantasyPros dynasty positional rank — Pulled Mar 18, 2026" style="cursor:help">FP</span></span></div>` : '';
+                    const pfColHeader = pfDataLoaded ? '<span class="pf-val" data-tip-title="PF (Starter Pts)" data-tip="Total fantasy points scored as a starter on this team across 2023-2025" style="cursor:help">PF</span>' : '<span class="pf-val loading" data-tip="Loading from Sleeper..." style="cursor:help">PF</span>';
+                    const header = showHeader ? `<div class="roster-player roster-col-header"><span class="pos"></span><span class="name"></span><span class="player-vals">${pfColHeader}<span class="ktc-val" data-tip-title="KTC Value" data-tip="KeepTradeCut dynasty value (1QB, 0.5 PPR). Pulled Mar 18, 2026." style="cursor:help">KTC</span><span class="fp-rank" data-tip-title="FP Dynasty Rank" data-tip="FantasyPros dynasty positional rank. Pulled Mar 18, 2026." style="cursor:help">FP</span></span></div>` : '';
                     return header + players.map(p => {
                         const ktc = ktcValues[p.n];
                         const fp = fpRanks[p.n];
-                        const ktcHtml = ktc ? `<span class="ktc-val" title="KTC Value: ${ktc[0]} (Rank #${ktc[1]})">${ktc[0].toLocaleString()}</span>` : '<span class="ktc-val unranked">—</span>';
-                        const fpHtml = fp ? `<span class="fp-rank" title="FantasyPros Dynasty: ${fp}">${fp}</span>` : '<span class="fp-rank unranked">—</span>';
+                        const ktcHtml = ktc ? `<span class="ktc-val" data-tip-title="KTC Value" data-tip="${ktc[0].toLocaleString()} (Rank #${ktc[1]})">${ktc[0].toLocaleString()}</span>` : '<span class="ktc-val unranked">—</span>';
+                        const fpHtml = fp ? `<span class="fp-rank" data-tip-title="FP Dynasty" data-tip="${fp}">${fp}</span>` : '<span class="fp-rank unranked">—</span>';
                         let pfHtml;
                         if (pfDataLoaded) {
                             const pf = getPlayerPF(owner, p.n);
                             if (pf && pf.pts > 0) {
                                 const avg = (pf.pts / pf.gp).toFixed(1);
-                                pfHtml = `<span class="pf-val" title="${pf.gp} games started \u00B7 ${pf.pts.toFixed(1)} total pts \u00B7 ${avg} avg">${pf.pts.toFixed(1)}</span>`;
+                                pfHtml = `<span class="pf-val" data-tip-title="Starter PF" data-tip="${pf.gp} games started · ${avg} pts/game">${pf.pts.toFixed(1)}</span>`;
                             } else {
                                 pfHtml = '<span class="pf-val unranked">\u2014</span>';
                             }
@@ -5641,7 +6035,7 @@
                     <div class="roster-card-header">
                         <div style="min-width:0;overflow:hidden;flex:1"><h3>${teamName}</h3><div style="font-size:0.8rem;color:var(--text-secondary)">${owner}</div></div>
                         <div style="display:flex;gap:0.6rem;align-items:center;">
-                            <div class="ktc-total-badge" title="Total KTC: Roster ${rosterKTC.toLocaleString()} + Picks ${picksKTC.toLocaleString()}"><div class="ktc-total-label">KTC Total</div><div class="ktc-total-value">${totalKTC.toLocaleString()}</div></div>
+                            <div class="ktc-total-badge" data-tip-title="KTC Breakdown" data-tip="Roster: ${rosterKTC.toLocaleString()} · Picks: ${picksKTC.toLocaleString()}"><div class="ktc-total-label">KTC Total</div><div class="ktc-total-value">${totalKTC.toLocaleString()}</div></div>
                             <div class="age-badge">Avg Age: ${r.avgAge}</div>
                         </div>
                     </div>
@@ -5753,7 +6147,7 @@
                     const round = p.match(/R(\d)/)?.[1] || '4';
                     const ktcVal = getPickKTCValue(p, owner);
                     const label = getPickLabel(p, owner);
-                    return `<span class="dc-pick r${round}" title="KTC: ${ktcVal.toLocaleString()}">${label} <span class="dc-pick-val">${ktcVal.toLocaleString()}</span></span>`;
+                    return `<span class="dc-pick r${round}" data-tip-title="Draft Pick" data-tip="KTC Value: ${ktcVal.toLocaleString()}">${label} <span class="dc-pick-val">${ktcVal.toLocaleString()}</span></span>`;
                 }).join('');
 
                 const tradedHtml = dc.traded.length > 0 ? `<div class="dc-traded-away"><div class="dc-traded-label">Traded Away</div>${dc.traded.map(t => `<div class="dc-traded-pick">${t}</div>`).join('')}</div>` : '';
@@ -6198,6 +6592,62 @@
         });
 
         // ═══════════════════════════════════════════
+        //  ROSTER TOOLTIP SYSTEM
+        // ═══════════════════════════════════════════
+        (function() {
+            const tip = document.getElementById('rosterTooltip');
+            if (!tip) return;
+
+            function showTip(e) {
+                const el = e.target.closest('[data-tip]');
+                if (!el) return;
+                const title = el.getAttribute('data-tip-title');
+                const body = el.getAttribute('data-tip');
+                tip.innerHTML = (title ? `<span class="tip-title">${title}</span>` : '') + `<span class="tip-body">${body}</span>`;
+                tip.classList.add('visible');
+                positionTip(e);
+            }
+
+            function positionTip(e) {
+                const rect = tip.getBoundingClientRect();
+                let x = e.clientX + 12;
+                let y = e.clientY - rect.height - 10;
+                // Keep within viewport
+                if (x + rect.width > window.innerWidth - 8) x = e.clientX - rect.width - 12;
+                if (y < 4) y = e.clientY + 18;
+                tip.style.left = x + 'px';
+                tip.style.top = y + 'px';
+            }
+
+            function hideTip() {
+                tip.classList.remove('visible');
+            }
+
+            document.addEventListener('mouseover', showTip);
+            document.addEventListener('mousemove', function(e) {
+                if (tip.classList.contains('visible')) positionTip(e);
+            });
+            document.addEventListener('mouseout', function(e) {
+                if (e.target.closest('[data-tip]')) hideTip();
+            });
+
+            // Touch support: tap to toggle
+            document.addEventListener('touchstart', function(e) {
+                const el = e.target.closest('[data-tip]');
+                if (!el) { hideTip(); return; }
+                if (tip.classList.contains('visible')) { hideTip(); return; }
+                const title = el.getAttribute('data-tip-title');
+                const body = el.getAttribute('data-tip');
+                tip.innerHTML = (title ? `<span class="tip-title">${title}</span>` : '') + `<span class="tip-body">${body}</span>`;
+                const rect = el.getBoundingClientRect();
+                tip.style.left = rect.left + 'px';
+                tip.style.top = (rect.top - 50) + 'px';
+                tip.classList.add('visible');
+                setTimeout(hideTip, 2500);
+            }, { passive: true });
+        })();
+
+        // ═══════════════════════════════════════════
         //  SEASON RECAPS — Tab button toggle
         // ═══════════════════════════════════════════
         document.querySelectorAll('.recap-season-btn').forEach(btn => {
@@ -6224,56 +6674,315 @@
             DeezNutz02:    { '2023': '4th Place' },
         };
 
+        // ═══════════════════════════════════════════
+        //  ENHANCED SEASON RECAPS — Inject stats
+        // ═══════════════════════════════════════════
+        function injectRecapStats() {
+            const years = ['2023','2024','2025'];
+            years.forEach(yr => {
+                const card = document.getElementById('recap-' + yr);
+                if (!card || card.querySelector('.recap-stats-bar')) return;
+                const owners = Object.keys(allTimeData);
+                const seasonScores = owners.map(o => {
+                    const s = allTimeData[o].seasons[yr];
+                    return s ? { owner: o, fpts: parseFloat(s.fpts), wins: s.wins, losses: s.losses } : null;
+                }).filter(Boolean).sort((a,b) => b.fpts - a.fpts);
+                const totalPts = seasonScores.reduce((sum, s) => sum + s.fpts, 0);
+                const avgPts = (totalPts / seasonScores.length / 14).toFixed(1);
+                const best = seasonScores[0];
+                const worst = seasonScores[seasonScores.length - 1];
+                const trades = transactionData.trades.filter(t => t[0] === parseInt(yr));
+                const waiversTotal = owners.reduce((sum, o) => {
+                    const ws = transactionData.waiverStats[o];
+                    return sum + (ws && ws.byYear[yr] ? ws.byYear[yr].w + ws.byYear[yr].fa : 0);
+                }, 0);
+                const mostActiveWaiver = owners.map(o => {
+                    const ws = transactionData.waiverStats[o];
+                    return { owner: o, total: ws && ws.byYear[yr] ? ws.byYear[yr].w + ws.byYear[yr].fa : 0 };
+                }).sort((a,b) => b.total - a.total)[0];
+
+                // Stats bar
+                const statsBarHtml = `
+                    <div class="recap-section-title">By the Numbers</div>
+                    <div class="recap-stats-bar">
+                        <div class="recap-stat-item"><div class="recap-stat-val">${avgPts}</div><div class="recap-stat-lbl">League Avg / Wk</div></div>
+                        <div class="recap-stat-item"><div class="recap-stat-val gold">${best.owner}</div><div class="recap-stat-lbl">Most Points (${best.fpts.toFixed(0)})</div></div>
+                        <div class="recap-stat-item"><div class="recap-stat-val danger">${worst.owner}</div><div class="recap-stat-lbl">Fewest Points (${worst.fpts.toFixed(0)})</div></div>
+                        <div class="recap-stat-item"><div class="recap-stat-val">${trades.length}</div><div class="recap-stat-lbl">Trades Made</div></div>
+                        <div class="recap-stat-item"><div class="recap-stat-val">${waiversTotal}</div><div class="recap-stat-lbl">Roster Moves</div></div>
+                        <div class="recap-stat-item"><div class="recap-stat-val">${mostActiveWaiver.owner}</div><div class="recap-stat-lbl">Most Active (${mostActiveWaiver.total} moves)</div></div>
+                    </div>`;
+
+                // Standings table
+                const sorted = seasonScores.sort((a,b) => b.wins - a.wins || b.fpts - a.fpts);
+                const champResults = championshipResults;
+                let standingsHtml = `
+                    <div class="recap-section-title">Final Standings</div>
+                    <table class="recap-standings-table">
+                        <thead><tr><th class="rank-col">#</th><th>Manager</th><th>Record</th><th>Points For</th><th>Playoff Finish</th></tr></thead>
+                        <tbody>`;
+                sorted.forEach((s, i) => {
+                    const finish = (champResults[s.owner] || {})[yr] || '';
+                    const isChamp = finish.includes('Champion');
+                    const isPlayoff = finish.length > 0;
+                    const rowCls = isChamp ? 'champ-row' : isPlayoff ? 'playoff-row' : '';
+                    standingsHtml += `<tr class="${rowCls}"><td class="rank-col">${i+1}</td><td class="owner-col" onclick="openTeamProfile('${s.owner}')">${s.owner}</td><td class="record-col">${s.wins}-${s.losses}</td><td class="pts-col">${s.fpts.toFixed(1)}</td><td style="font-size:0.78rem;color:${isChamp?'var(--accent-gold)':isPlayoff?'var(--accent-teal)':'var(--text-secondary)'}">${finish}</td></tr>`;
+                });
+                standingsHtml += '</tbody></table>';
+
+                // Insert after the story section
+                const story = card.querySelector('.recap-story');
+                if (story) {
+                    story.insertAdjacentHTML('afterend', statsBarHtml + standingsHtml);
+                }
+            });
+        }
+        // Run once on load and when recaps tab activates
+        injectRecapStats();
+
+        // ═══════════════════════════════════════════
+        //  FULL TEAM PROFILE PAGE
+        // ═══════════════════════════════════════════
+        let tpChartInst = null;
+        let previousTab = 'overview';
+
         function openTeamProfile(owner) {
             const data = allTimeData[owner];
             if (!data) return;
-            document.getElementById('profileOwnerName').textContent = owner;
-            document.getElementById('profileTeamName').textContent = data.team_name;
-            document.getElementById('profileCareerStats').innerHTML = `
-                <div class="profile-stat"><div class="profile-stat-val">${data.total_wins}-${data.total_losses}</div><div class="profile-stat-lbl">All-Time Record</div></div>
-                <div class="profile-stat"><div class="profile-stat-val">${data.win_pct}%</div><div class="profile-stat-lbl">Win %</div></div>
-                <div class="profile-stat"><div class="profile-stat-val">${parseFloat(data.avg_score).toFixed(1)}</div><div class="profile-stat-lbl">Avg / Week</div></div>
-                <div class="profile-stat"><div class="profile-stat-val">${data.max_week}</div><div class="profile-stat-lbl">Best Week</div></div>
-                <div class="profile-stat"><div class="profile-stat-val">${data.manager_efficiency}%</div><div class="profile-stat-lbl">Mgr Eff.</div></div>
-                <div class="profile-stat"><div class="profile-stat-val">${parseFloat(data.total_ppts).toFixed(0)}</div><div class="profile-stat-lbl">Max PF</div></div>
-            `;
-            document.getElementById('profileSeasons').innerHTML = ['2023','2024','2025'].map(yr => {
+
+            // Remember current tab so back button returns there
+            const currentActive = document.querySelector('.tab-content.active');
+            if (currentActive && currentActive.id !== 'teamprofile') {
+                previousTab = currentActive.id;
+            }
+
+            // Switch to the team profile tab
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('teamprofile').classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Build honors
+            const honors = [];
+            Object.entries(championshipResults[owner] || {}).forEach(([yr, result]) => {
+                if (result.includes('Champion')) honors.push('🏆 ' + yr + ' Champion');
+            });
+            Object.entries(championshipResults[owner] || {}).forEach(([yr, result]) => {
+                if (result.includes('Runner-Up')) honors.push('🥈 ' + yr + ' Runner-Up');
+            });
+            if (parseFloat(data.win_pct) >= 60) honors.push('60%+ All-Time Win Rate');
+            if (parseFloat(data.manager_efficiency) >= 85) honors.push('Elite Manager Efficiency');
+            if (parseFloat(data.max_week) >= 180) honors.push('180+ Point Game');
+            if (owner === 'JustinG66') honors.push('🔥 All-Time High Score (222.74)');
+            if (owner === 'nendy') honors.push('😤 All-Time Win Streak (8)');
+            if (owner === 'doyersbeast') honors.push('💥 All-Time Blowout (119.8)');
+
+            // Build season cards
+            const seasonCards = ['2023','2024','2025'].map(yr => {
                 const s = data.seasons[yr];
                 if (!s) return '';
-                const result = (championshipResults[owner] || {})[yr] || '';
-                return `<div class="profile-season-card">
-                    <div class="profile-season-year">${yr}</div>
-                    <div class="profile-season-record">${s.wins}-${s.losses}</div>
-                    <div class="profile-season-pts">${parseFloat(s.fpts).toFixed(1)} pts scored</div>
-                    ${result ? `<div class="profile-season-result">${result}</div>` : ''}
+                const finish = (championshipResults[owner] || {})[yr] || '';
+                const allOwners = Object.keys(allTimeData).map(o => {
+                    const os = allTimeData[o].seasons[yr];
+                    return os ? { owner: o, fpts: parseFloat(os.fpts) } : null;
+                }).filter(Boolean).sort((a,b) => b.fpts - a.fpts);
+                const rank = allOwners.findIndex(o => o.owner === owner) + 1;
+                return `<div class="tp-season-card">
+                    <div class="rank-badge">#${rank} in pts</div>
+                    <div class="yr">${yr}</div>
+                    <div class="rec">${s.wins}-${s.losses}</div>
+                    <div class="pts">${parseFloat(s.fpts).toFixed(1)} pts</div>
+                    ${finish ? `<div class="finish">${finish}</div>` : ''}
                 </div>`;
             }).join('');
-            const honors = [];
-            if ((championshipResults[owner]||{})['2023']==='🏆 Champion') honors.push('🏆 2023 Champion');
-            if ((championshipResults[owner]||{})['2024']==='🏆 Champion') honors.push('🏆 2024 Champion');
-            if ((championshipResults[owner]||{})['2025']==='🏆 Champion') honors.push('🏆 2025 Champion');
-            if (parseFloat(data.win_pct) >= 60) honors.push('All-Time Win % Leader Tier');
-            if (parseFloat(data.manager_efficiency) >= 85) honors.push('Elite Manager Efficiency');
-            if (parseFloat(data.max_week) >= 180) honors.push('180+ Point Game Club');
-            if (owner === 'JustinG66') honors.push('🔥 All-Time High Score (222.74)');
-            if (owner === 'nendy') honors.push('😤 All-Time Win Streak (8 straight)');
-            if (owner === 'doyersbeast') honors.push('💥 All-Time Blowout Record (180.50)');
-            const honorsSec = document.getElementById('profileHonorsSection');
-            if (honors.length) {
-                document.getElementById('profileHonors').innerHTML = honors.map(h => `<span class="profile-honor-badge">${h}</span>`).join('');
-                honorsSec.style.display = '';
-            } else {
-                honorsSec.style.display = 'none';
-            }
+
+            // Build trade history
+            const ownerTrades = transactionData.trades.filter(t => t[3][owner]);
+            const tradeHtml = ownerTrades.length ? ownerTrades.map(t => {
+                const [year, week, , sides] = t;
+                const mySide = sides[owner];
+                const partner = Object.keys(sides).find(k => k !== owner);
+                return `<div class="tp-trade-card">
+                    <div class="tp-trade-header">
+                        <span class="tp-trade-date">${year} &middot; Week ${week}</span>
+                        <span class="tp-trade-partner" style="cursor:pointer" onclick="openTeamProfile('${partner}')">${partner}</span>
+                    </div>
+                    <div class="tp-trade-sides">
+                        <div class="tp-trade-side"><div class="side-label">Received</div><div class="side-items">${mySide.got.join('<br>')}</div></div>
+                        <div class="tp-trade-arrow">⇄</div>
+                        <div class="tp-trade-side"><div class="side-label">Sent</div><div class="side-items">${mySide.gave.join('<br>')}</div></div>
+                    </div>
+                </div>`;
+            }).join('') : '<div class="tp-empty">No trades on record.</div>';
+
+            // Build waiver activity
+            const ws = transactionData.waiverStats[owner];
+            const waiverHtml = ws ? ['2023','2024','2025'].map(yr => {
+                const byYr = ws.byYear[yr] || { w: 0, fa: 0 };
+                return `<div class="tp-waiver-card">
+                    <div class="wv-year">${yr}</div>
+                    <div class="wv-stats">
+                        <div class="wv-stat"><div class="wv-val">${byYr.w}</div><div class="wv-lbl">Waivers</div></div>
+                        <div class="wv-stat"><div class="wv-val">${byYr.fa}</div><div class="wv-lbl">Free Agent</div></div>
+                        <div class="wv-stat"><div class="wv-val">${byYr.w + byYr.fa}</div><div class="wv-lbl">Total</div></div>
+                    </div>
+                </div>`;
+            }).join('') : '<div class="tp-empty">No waiver data.</div>';
+
+            // Build H2H
             const ownerH2H = h2hData[owner] || {};
-            document.getElementById('profileH2H').innerHTML = Object.keys(ownerH2H).sort().map(opp => {
-                const rec = ownerH2H[opp];
-                const cls = rec.wins > rec.losses ? 'winning' : rec.wins < rec.losses ? 'losing' : 'even';
-                return `<div class="profile-h2h-item"><span class="profile-h2h-name">${opp}</span><span class="profile-h2h-record ${cls}">${rec.wins}-${rec.losses}</span></div>`;
+            const h2hHtml = Object.keys(ownerH2H).sort((a,b) => {
+                const diff = (ownerH2H[b].wins - ownerH2H[b].losses) - (ownerH2H[a].wins - ownerH2H[a].losses);
+                return diff !== 0 ? -diff : a.localeCompare(b);
+            }).map(opp => {
+                const r = ownerH2H[opp];
+                const cls = r.wins > r.losses ? 'w' : r.wins < r.losses ? 'l' : 'e';
+                return `<div class="tp-h2h-item" onclick="openTeamProfile('${opp}')"><span class="tp-h2h-name">${opp}</span><span class="tp-h2h-rec ${cls}">${r.wins}-${r.losses}</span></div>`;
             }).join('');
-            document.getElementById('teamProfileModal').classList.add('open');
+
+            // Build draft capital
+            const dc = typeof draftCapitalData !== 'undefined' ? draftCapitalData[owner] : null;
+            let dcHtml = '';
+            if (dc) {
+                dcHtml = '<div class="tp-dc-list">' + dc.picks.map(p => `<span class="tp-dc-pick">${p}</span>`).join('');
+                if (dc.traded && dc.traded.length) {
+                    dcHtml += dc.traded.map(p => `<span class="tp-dc-pick traded">${p}</span>`).join('');
+                }
+                dcHtml += '</div>';
+            } else {
+                dcHtml = '<div class="tp-empty">No draft capital data.</div>';
+            }
+
+            // Total H2H record
+            const h2hWins = Object.values(ownerH2H).reduce((s, r) => s + r.wins, 0);
+            const h2hLosses = Object.values(ownerH2H).reduce((s, r) => s + r.losses, 0);
+
+            // Streak data
+            const streaks = streakData[owner] || { longestWin: 0, longestLoss: 0 };
+
+            // Assemble page
+            document.getElementById('tpContent').innerHTML = `
+                <button class="tp-back-btn" onclick="goBackFromProfile()">← Back</button>
+                <div class="tp-hero">
+                    <div class="tp-hero-avatar">${honors.some(h => h.includes('Champion')) ? '🏆' : '🏈'}</div>
+                    <div class="tp-hero-info">
+                        <h2>${owner}</h2>
+                        <div class="tp-team-name">${data.team_name}</div>
+                        ${honors.length ? '<div class="tp-hero-badges">' + honors.map(h => `<span class="tp-hero-badge">${h}</span>`).join('') + '</div>' : ''}
+                    </div>
+                    <div class="tp-hero-stats">
+                        <div><div class="tp-hero-stat-val">${data.total_wins}-${data.total_losses}</div><div class="tp-hero-stat-lbl">All-Time</div></div>
+                        <div><div class="tp-hero-stat-val">${data.win_pct}%</div><div class="tp-hero-stat-lbl">Win Rate</div></div>
+                        <div><div class="tp-hero-stat-val">${parseFloat(data.avg_score).toFixed(1)}</div><div class="tp-hero-stat-lbl">Avg / Week</div></div>
+                    </div>
+                </div>
+
+                <div class="tp-section">
+                    <div class="tp-section-title">Career Stats</div>
+                    <div class="tp-stats-grid">
+                        <div class="tp-stat-card"><div class="val">${data.total_wins}-${data.total_losses}</div><div class="lbl">Record</div></div>
+                        <div class="tp-stat-card"><div class="val">${parseFloat(data.total_fpts).toFixed(0)}</div><div class="lbl">Points For</div></div>
+                        <div class="tp-stat-card"><div class="val">${parseFloat(data.total_fpts_against).toFixed(0)}</div><div class="lbl">Points Against</div></div>
+                        <div class="tp-stat-card"><div class="val">${data.max_week}</div><div class="lbl">Best Week</div></div>
+                        <div class="tp-stat-card"><div class="val">${data.min_week}</div><div class="lbl">Worst Week</div></div>
+                        <div class="tp-stat-card"><div class="val">${data.median}</div><div class="lbl">Median Score</div></div>
+                        <div class="tp-stat-card"><div class="val">${data.manager_efficiency}%</div><div class="lbl">Mgr Efficiency</div></div>
+                        <div class="tp-stat-card"><div class="val">${data.stdev}</div><div class="lbl">Std Dev</div></div>
+                        <div class="tp-stat-card"><div class="val">${streaks.longestWin}</div><div class="lbl">Best Streak</div></div>
+                        <div class="tp-stat-card"><div class="val">${streaks.longestLoss}</div><div class="lbl">Worst Streak</div></div>
+                        <div class="tp-stat-card"><div class="val">${h2hWins}-${h2hLosses}</div><div class="lbl">H2H Total</div></div>
+                        <div class="tp-stat-card"><div class="val">${ownerTrades.length}</div><div class="lbl">Career Trades</div></div>
+                    </div>
+                </div>
+
+                <div class="tp-section">
+                    <div class="tp-section-title">Season-by-Season</div>
+                    <div class="tp-seasons-grid">${seasonCards}</div>
+                </div>
+
+                <div class="tp-section">
+                    <div class="tp-section-title">Scoring Trend</div>
+                    <div class="tp-chart-wrap"><canvas id="tpTrendChart"></canvas></div>
+                </div>
+
+                <div class="tp-section">
+                    <div class="tp-section-title">Trade History (${ownerTrades.length})</div>
+                    <div class="tp-trade-list">${tradeHtml}</div>
+                </div>
+
+                <div class="tp-section">
+                    <div class="tp-section-title">Waiver &amp; FA Activity</div>
+                    <div class="tp-waiver-summary">${waiverHtml}</div>
+                </div>
+
+                <div class="tp-section">
+                    <div class="tp-section-title">Head-to-Head vs. Everyone</div>
+                    <div class="tp-h2h-grid">${h2hHtml}</div>
+                </div>
+
+                <div class="tp-section">
+                    <div class="tp-section-title">Draft Capital Holdings</div>
+                    ${dcHtml}
+                </div>
+            `;
+
+            // Build trend chart — season-level averages (real data, no random generation)
+            if (tpChartInst) { tpChartInst.destroy(); tpChartInst = null; }
+            const trendCtx = document.getElementById('tpTrendChart');
+            if (trendCtx) {
+                const trendSeasons = ['2023','2024','2025'];
+                const trendLabels = [];
+                const trendPF = [];
+                const trendMaxPF = [];
+                const trendEff = [];
+                trendSeasons.forEach(yr => {
+                    const s = data.seasons[yr];
+                    if (s) {
+                        const games = s.wins + s.losses;
+                        trendLabels.push(yr);
+                        trendPF.push(parseFloat((s.fpts / games).toFixed(1)));
+                        trendMaxPF.push(parseFloat((s.ppts / games).toFixed(1)));
+                        trendEff.push(parseFloat((s.fpts / s.ppts * 100).toFixed(1)));
+                    }
+                });
+                tpChartInst = new Chart(trendCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: trendLabels,
+                        datasets: [
+                            { label: 'Avg PF / Game', data: trendPF, backgroundColor: 'rgba(0,212,170,0.7)', borderColor: '#00d4aa', borderWidth: 1, yAxisID: 'y', order: 2 },
+                            { label: 'Avg Max PF / Game', data: trendMaxPF, backgroundColor: 'rgba(255,215,0,0.3)', borderColor: 'rgba(255,215,0,0.8)', borderWidth: 1, yAxisID: 'y', order: 3 },
+                            { label: 'Efficiency %', data: trendEff, type: 'line', borderColor: '#f85149', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 5, pointHoverRadius: 7, yAxisID: 'y1', order: 1 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#8b949e', font: { size: 10 } } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.dataset.yAxisID === 'y1' ? ctx.parsed.y.toFixed(1) + '%' : ctx.parsed.y.toFixed(1)) } } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 11 } } },
+                            y: { position: 'left', title: { display: true, text: 'Points / Game', color: '#8b949e', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 } } },
+                            y1: { position: 'right', title: { display: true, text: 'Efficiency %', color: '#8b949e', font: { size: 10 } }, grid: { drawOnChartArea: false }, ticks: { color: '#8b949e', font: { size: 10 }, callback: v => v + '%' }, min: 70, max: 100 }
+                        }
+                    }
+                });
+            }
+
+            // Update URL hash
+            history.pushState(null, '', '#profile-' + owner);
         }
 
+        function goBackFromProfile() {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const prev = document.getElementById(previousTab);
+            if (prev) prev.classList.add('active');
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === previousTab);
+            });
+            history.pushState(null, '', '#' + previousTab);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Keep the modal working for backward compatibility
         document.getElementById('profileModalClose').addEventListener('click', () => {
             document.getElementById('teamProfileModal').classList.remove('open');
         });
@@ -6308,16 +7017,18 @@
                 const d = allTimeData[owner];
                 const s25 = d.seasons['2025'];
                 const winPct = s25 ? parseFloat((s25.wins / (s25.wins + s25.losses) * 100).toFixed(1)) : 0;
+                const ppts2025 = s25 ? parseFloat(s25.ppts) : 0;
                 return {
                     label: owner,
-                    data: [{ x: parseFloat(d.total_ppts), y: winPct }],
+                    data: [{ x: ppts2025, y: winPct }],
                     backgroundColor: palette[i % palette.length] + 'bb',
                     borderColor: palette[i % palette.length],
                     borderWidth: 2, pointRadius: 11, pointHoverRadius: 14,
                 };
             });
-            const allPpts = owners.map(o => parseFloat(allTimeData[o].total_ppts));
-            const midPpts = (Math.min(...allPpts) + Math.max(...allPpts)) / 2;
+            const allPpts = owners.map(o => { const s = allTimeData[o].seasons['2025']; return s ? parseFloat(s.ppts) : 0; });
+            const sortedPpts = [...allPpts].sort((a, b) => a - b);
+            const midPpts = sortedPpts.length % 2 === 0 ? (sortedPpts[sortedPpts.length/2 - 1] + sortedPpts[sortedPpts.length/2]) / 2 : sortedPpts[Math.floor(sortedPpts.length/2)];
             contenderChartInst = new Chart(ctx, {
                 type: 'scatter',
                 data: { datasets },
@@ -6346,11 +7057,11 @@
                         legend: { display: false },
                         tooltip: { callbacks: { label(ctx) {
                             const o = ctx.dataset.label, d = allTimeData[o];
-                            return [o + ' — ' + d.team_name, '2025 Win %: ' + ctx.parsed.y + '%', 'Max PF: ' + ctx.parsed.x.toFixed(0)];
+                            return [o + ' — ' + d.team_name, '2025 Win %: ' + ctx.parsed.y + '%', '2025 Max PF: ' + ctx.parsed.x.toFixed(0)];
                         }}}
                     },
                     scales: {
-                        x: { title: { display: true, text: 'Roster Talent — Max PF (all-time)', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 } } },
+                        x: { title: { display: true, text: 'Roster Talent — 2025 Max PF', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 } } },
                         y: { title: { display: true, text: '2025 Season Win %', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 }, callback: v => v + '%' }, min: 0, max: 100 }
                     },
                     onClick(e, els) {
@@ -6358,6 +7069,85 @@
                     }
                 }
             });
+        }
+
+        // ═══════════════════════════════════════════
+        //  GLOBAL MANAGER LINK WIRING
+        //  Makes all owner names clickable site-wide
+        // ═══════════════════════════════════════════
+        const allOwnerNames = Object.keys(allTimeData);
+        function wireManagerLinks(root) {
+            if (!root) return;
+            // Wire elements with data-owner attribute
+            root.querySelectorAll('[data-owner]').forEach(el => {
+                if (el.classList.contains('manager-link')) return;
+                el.classList.add('manager-link');
+                el.style.cursor = 'pointer';
+                el.title = 'View ' + el.dataset.owner + "'s profile";
+                el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(el.dataset.owner); });
+            });
+        }
+
+        // Observe the main content area for dynamically generated owner names
+        const mainEl = document.querySelector('main');
+        if (mainEl) {
+            const globalObserver = new MutationObserver(() => {
+                // Wire H2H grid owner names
+                document.querySelectorAll('.h2h-header-cell, .h2h-label').forEach(el => {
+                    const name = el.textContent.trim();
+                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
+                        el.classList.add('manager-link');
+                        el.title = 'View ' + name + "'s profile";
+                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
+                    }
+                });
+                // Wire roster card owner names
+                document.querySelectorAll('.roster-owner-name').forEach(el => {
+                    const name = el.textContent.trim();
+                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
+                        el.classList.add('manager-link');
+                        el.title = 'View ' + name + "'s profile";
+                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
+                    }
+                });
+                // Wire transaction trade partner names
+                document.querySelectorAll('.trade-team-name').forEach(el => {
+                    const name = el.textContent.trim();
+                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
+                        el.classList.add('manager-link');
+                        el.title = 'View ' + name + "'s profile";
+                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
+                    }
+                });
+                // Wire playoff bracket team names
+                document.querySelectorAll('.pm-team span').forEach(el => {
+                    const rawName = el.textContent.trim().replace(/^🏆\s*/, '').replace(/\s*\(\d+\)$/, '');
+                    if (allOwnerNames.includes(rawName) && !el.classList.contains('manager-link')) {
+                        el.classList.add('manager-link');
+                        el.title = 'View ' + rawName + "'s profile";
+                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(rawName); });
+                    }
+                });
+                // Wire power rankings names
+                document.querySelectorAll('.pr-owner').forEach(el => {
+                    const name = el.textContent.trim();
+                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
+                        el.classList.add('manager-link');
+                        el.title = 'View ' + name + "'s profile";
+                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
+                    }
+                });
+                // Wire draft capital card names
+                document.querySelectorAll('.dc-owner-name').forEach(el => {
+                    const name = el.textContent.trim();
+                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
+                        el.classList.add('manager-link');
+                        el.title = 'View ' + name + "'s profile";
+                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
+                    }
+                });
+            });
+            globalObserver.observe(mainEl, { childList: true, subtree: true });
         }
     </script>
 
@@ -6389,11 +7179,11 @@
             </svg>
             <span class="mobile-nav-label">H2H</span>
         </button>
-        <button class="mobile-nav-item" data-mobile-tab="playoffs" aria-label="Playoffs">
+        <button class="mobile-nav-item" data-mobile-tab="rosters" aria-label="Rosters">
             <svg class="mobile-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
             </svg>
-            <span class="mobile-nav-label">Playoffs</span>
+            <span class="mobile-nav-label">Rosters</span>
         </button>
         <button class="mobile-nav-item" id="mobileMoreBtn" aria-label="More">
             <svg class="mobile-nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -6411,11 +7201,11 @@
             <div class="mobile-more-handle"></div>
             <div class="mobile-more-title">More</div>
             <ul class="mobile-more-list">
-                <li class="mobile-more-item" data-more-tab="rosters">
+                <li class="mobile-more-item" data-more-tab="playoffs">
                     <span class="mobile-more-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                     </span>
-                    <span class="mobile-more-label">Rosters</span>
+                    <span class="mobile-more-label">Playoffs</span>
                     <span class="mobile-more-chevron">›</span>
                 </li>
                 <li class="mobile-more-item" data-more-tab="records">
@@ -6482,7 +7272,7 @@
     // ─── MOBILE BOTTOM NAV ───────────────────────────────────────────────────
     (function() {
         // The 5 primary tabs mapped directly in the bottom nav
-        const PRIMARY_TABS = ['overview', 'standings', 'h2h', 'playoffs'];
+        const PRIMARY_TABS = ['overview', 'standings', 'h2h', 'rosters'];
 
         // Reuse the existing desktop tab-switching logic
         function activateTab(tabName) {
@@ -6572,9 +7362,15 @@
         }
 
         // Wire up items inside the More sheet
+        function updateMoreSheetActive(tabName) {
+            document.querySelectorAll('.mobile-more-item[data-more-tab]').forEach(function(el) {
+                el.classList.toggle('active-tab', el.dataset.moreTab === tabName);
+            });
+        }
         document.querySelectorAll('.mobile-more-item[data-more-tab]').forEach(function(item) {
             item.addEventListener('click', function() {
                 var tab = item.dataset.moreTab;
+                updateMoreSheetActive(tab);
                 closeMoreSheet();
                 setTimeout(function() {
                     activateTab(tab);
