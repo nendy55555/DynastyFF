@@ -2867,7 +2867,13 @@
            ══════════════════════════════════════════ */
         .champ-run-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2500; align-items: flex-start; justify-content: center; padding: 1rem; backdrop-filter: blur(6px); overflow-y: auto; }
         .champ-run-overlay.open { display: flex; }
-        .champ-run-modal { background: var(--bg-primary); border: 1px solid var(--border-color-light); border-radius: 16px; width: 100%; max-width: 900px; margin: 2rem auto; padding: 0; position: relative; box-shadow: 0 24px 80px rgba(0,0,0,0.65); overflow: hidden; }
+        .champ-run-modal { background: var(--bg-primary); border: 1px solid var(--border-color-light); border-radius: 16px; width: 100%; max-width: 900px; margin: 2rem auto; padding: 0; position: relative; box-shadow: 0 24px 80px rgba(0,0,0,0.65); overflow: hidden; max-height: 85vh; display: flex; flex-direction: column; }
+        .champ-run-hero { flex-shrink: 0; }
+        .champ-run-body { overflow-y: auto; flex: 1; }
+        .champ-run-body::-webkit-scrollbar { width: 6px; }
+        .champ-run-body::-webkit-scrollbar-track { background: transparent; }
+        .champ-run-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        .champ-run-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
         .champ-run-close { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; cursor: pointer; font-size: 1rem; padding: 0.25rem 0.65rem; line-height: 1.5; transition: all 0.2s; font-family: 'Inter', sans-serif; z-index: 10; }
         .champ-run-close:hover { background: rgba(255,255,255,0.15); }
         .champ-run-hero { background: linear-gradient(135deg, rgba(255,215,0,0.12) 0%, rgba(201,168,76,0.06) 40%, rgba(0,212,170,0.08) 100%); padding: 2.5rem 2rem 2rem; border-bottom: 1px solid var(--border-color); text-align: center; position: relative; }
@@ -5323,6 +5329,13 @@
             2025: { 1: "nendy", 2: "shaqdeezy", 3: "MrEton", 4: "jakeschwartz", 5: "andrewmcorral", 6: "doyersbeast", 7: "nsbarbarino", 8: "SweetSweet", 9: "grffnboss", 10: "JustinG66", 11: "DeezNutz02", 12: "bradysballzfdf" }
         };
 
+        // Maps roster slot IDs → actual playoff entry seeds (1 = top seed) for each season
+        const playoffSeedMap = {
+            2023: { 1: 1, 5: 2, 11: 3, 10: 4, 9: 5, 12: 6 },
+            2024: { 3: 1, 5: 2, 2: 3, 4: 4, 1: 5, 9: 6 },
+            2025: { 1: 1, 5: 2, 7: 3, 6: 4, 4: 5, 11: 6 }
+        };
+
         const bracketData = {
             2023: {
                 round1: [
@@ -5375,12 +5388,16 @@
             const container = document.getElementById(containerId);
             const data = bracketData[year];
             const rosterMap = rosters[year];
+            const seedMap = playoffSeedMap[year] || {};
 
             let html = '<div class="bracket">';
 
-            const seedEntry = (seed, name, score, isWinner) => `
+            // Returns the actual playoff entry seed (1–6) for a roster slot
+            const getSeed = (slot) => seedMap[slot] || slot;
+
+            const seedEntry = (slot, name, score, isWinner) => `
                         <div class="team-entry ${isWinner ? 'winner' : 'loser'}">
-                            <span class="seed-badge">${seed}</span>
+                            <span class="seed-badge">${getSeed(slot)}</span>
                             <span class="team-name-bracket">${name}</span>
                             <span class="team-score">${score || '-'}</span>
                         </div>`;
