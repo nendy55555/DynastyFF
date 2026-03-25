@@ -254,7 +254,7 @@
             justify-content: center;
             position: relative;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: default;
+            cursor: pointer;
         }
 
         .champion-card::before {
@@ -2863,6 +2863,68 @@
         .playoff-matchup .pm-divider { border: none; border-top: 1px solid var(--border-color); margin: 0.2rem 0; }
 
         /* ══════════════════════════════════════════
+           CHAMPIONSHIP RUN MODAL
+           ══════════════════════════════════════════ */
+        .champ-run-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2500; align-items: flex-start; justify-content: center; padding: 1rem; backdrop-filter: blur(6px); overflow-y: auto; }
+        .champ-run-overlay.open { display: flex; }
+        .champ-run-modal { background: var(--bg-primary); border: 1px solid var(--border-color-light); border-radius: 16px; width: 100%; max-width: 900px; margin: 2rem auto; padding: 0; position: relative; box-shadow: 0 24px 80px rgba(0,0,0,0.65); overflow: hidden; }
+        .champ-run-close { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; cursor: pointer; font-size: 1rem; padding: 0.25rem 0.65rem; line-height: 1.5; transition: all 0.2s; font-family: 'Inter', sans-serif; z-index: 10; }
+        .champ-run-close:hover { background: rgba(255,255,255,0.15); }
+        .champ-run-hero { background: linear-gradient(135deg, rgba(255,215,0,0.12) 0%, rgba(201,168,76,0.06) 40%, rgba(0,212,170,0.08) 100%); padding: 2.5rem 2rem 2rem; border-bottom: 1px solid var(--border-color); text-align: center; position: relative; }
+        .champ-run-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.08) 0%, transparent 70%); pointer-events: none; }
+        .champ-run-year { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 3px; color: var(--accent-gold); font-weight: 700; margin-bottom: 0.5rem; }
+        .champ-run-title { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent-gold), #fff, var(--accent-gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.25rem; }
+        .champ-run-team { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; }
+        .champ-run-record-bar { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
+        .champ-run-record-item { text-align: center; }
+        .champ-run-record-val { font-size: 1.3rem; font-weight: 800; color: var(--accent-teal); font-family: 'Courier New', monospace; }
+        .champ-run-record-lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 600; }
+        .champ-run-body { padding: 2rem; }
+        .champ-run-section { margin-bottom: 2rem; }
+        .champ-run-section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.8px; color: var(--text-secondary); font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
+        .champ-run-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
+        .champ-run-narrative { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.75rem; }
+        .champ-run-narrative p { color: var(--text-primary); line-height: 1.85; font-size: 0.95rem; margin-bottom: 0.85rem; }
+        .champ-run-narrative p:last-child { margin-bottom: 0; }
+        .champ-run-path { display: flex; gap: 0; align-items: stretch; overflow-x: auto; padding-bottom: 0.5rem; }
+        .champ-run-path-step { flex: 1; min-width: 200px; position: relative; text-align: center; padding: 1.25rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .champ-run-path-step:first-child { border-radius: 12px 0 0 12px; }
+        .champ-run-path-step:last-child { border-radius: 0 12px 12px 0; }
+        .champ-run-path-step.championship { background: rgba(255,215,0,0.08); border-color: rgba(255,215,0,0.3); }
+        .champ-run-path-step .step-round { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.5rem; }
+        .champ-run-path-step .step-result { font-size: 0.82rem; color: var(--accent-teal); font-weight: 700; margin-bottom: 0.15rem; }
+        .champ-run-path-step .step-opponent { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.35rem; }
+        .champ-run-path-step .step-score { font-size: 1.1rem; font-weight: 800; font-family: 'Courier New', monospace; color: var(--text-primary); }
+        .champ-run-path-step .step-margin { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.15rem; }
+        .champ-run-path-arrow { display: flex; align-items: center; color: var(--accent-gold); font-size: 1.2rem; padding: 0 0.25rem; flex-shrink: 0; }
+        .champ-run-moves { display: grid; gap: 0.75rem; }
+        .champ-run-move { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem 1.25rem; display: flex; gap: 1rem; align-items: flex-start; }
+        .champ-run-move-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+        .champ-run-move-text { flex: 1; }
+        .champ-run-move-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.15rem; }
+        .champ-run-move-desc { font-size: 0.9rem; color: var(--text-primary); line-height: 1.5; }
+        .champ-run-topweeks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+        .champ-run-week { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; text-align: center; transition: var(--transition); }
+        .champ-run-week:hover { border-color: var(--border-color-light); }
+        .champ-run-week .week-num { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 700; }
+        .champ-run-week .week-score { font-size: 1.2rem; font-weight: 800; color: var(--accent-teal); font-family: 'Courier New', monospace; margin: 0.2rem 0; }
+        .champ-run-week .week-opp { font-size: 0.72rem; color: var(--text-secondary); }
+        .champ-run-week .week-result { font-size: 0.68rem; font-weight: 700; margin-top: 0.15rem; }
+        .champ-run-week .week-result.win { color: var(--success); }
+        .champ-run-week .week-result.loss { color: var(--danger); }
+
+        @media (max-width: 768px) {
+            .champ-run-modal { margin: 0.5rem; }
+            .champ-run-hero { padding: 1.5rem 1rem; }
+            .champ-run-title { font-size: 1.4rem; }
+            .champ-run-body { padding: 1.25rem; }
+            .champ-run-path { flex-direction: column; }
+            .champ-run-path-step:first-child { border-radius: 12px 12px 0 0; }
+            .champ-run-path-step:last-child { border-radius: 0 0 12px 12px; }
+            .champ-run-path-arrow { justify-content: center; transform: rotate(90deg); padding: 0.25rem 0; }
+        }
+
+        /* ══════════════════════════════════════════
            TEAM PROFILE MODAL
            ══════════════════════════════════════════ */
         .profile-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 2000; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(4px); }
@@ -3025,7 +3087,7 @@
                         <button class="nav-tab" data-tab="playoffs">Playoffs</button>
                         <button class="nav-tab" data-tab="powerrankings">Power Rankings</button>
                         <button class="nav-tab" data-tab="draftboard">Draft Board</button>
-                        <button class="nav-tab" data-tab="transactions">Transactions</button>
+                        <button class="nav-tab" data-tab="transactions">Trades</button>
                     </div>
                 </div>
                 <div class="nav-group">
@@ -3046,10 +3108,9 @@
         <div class="hero-container">
             <h1>Til Death do us Part</h1>
             <p class="hero-subtitle">Dynasty Fantasy Football | Est. 2023 | 12 Teams | Half-PPR</p>
-            <p style="font-size: 0.7rem; color: #6b7280; margin-top: 0.35rem; margin-bottom: 1.5rem;">Data as of: Week 14, 2025 Season | Scoring: <a href="https://sleeper.com" target="_blank" style="color: #6b7280; text-decoration: underline;">Sleeper</a> | Player Values: <a href="https://keeptradecut.com" target="_blank" style="color: #6b7280; text-decoration: underline;">KeepTradeCut</a></p>
 
             <div class="champions-grid">
-                <div class="champion-card">
+                <div class="champion-card" onclick="openChampionshipRun(2023)" title="View 2023 Championship Run">
                     <div class="champion-year">2023</div>
                     <span class="champion-trophy">🏆</span>
                     <div class="champion-name">nendy</div>
@@ -3057,7 +3118,7 @@
                         <span>pedick</span>
                     </div>
                 </div>
-                <div class="champion-card">
+                <div class="champion-card" onclick="openChampionshipRun(2024)" title="View 2024 Championship Run">
                     <div class="champion-year">2024</div>
                     <span class="champion-trophy">🏆</span>
                     <div class="champion-name">MrEton</div>
@@ -3065,7 +3126,7 @@
                         <span>MrEton</span>
                     </div>
                 </div>
-                <div class="champion-card">
+                <div class="champion-card" onclick="openChampionshipRun(2025)" title="View 2025 Championship Run">
                     <div class="champion-year">2025</div>
                     <span class="champion-trophy">🏆</span>
                     <div class="champion-name">doyersbeast</div>
@@ -3765,6 +3826,14 @@
     <div id="rosterTooltip"></div>
 
     <!-- TEAM PROFILE MODAL -->
+    <!-- CHAMPIONSHIP RUN MODAL -->
+    <div class="champ-run-overlay" id="champRunOverlay">
+        <div class="champ-run-modal">
+            <button class="champ-run-close" id="champRunClose">&times;</button>
+            <div id="champRunContent"></div>
+        </div>
+    </div>
+
     <div class="profile-modal-overlay" id="teamProfileModal">
         <div class="profile-modal">
             <button class="profile-modal-close" id="profileModalClose">&times;</button>
@@ -6754,6 +6823,202 @@
         injectRecapStats();
 
         // ═══════════════════════════════════════════
+        //  CHAMPIONSHIP RUN MODAL
+        // ═══════════════════════════════════════════
+        const championshipRunData = {
+            2023: {
+                owner: 'nendy',
+                team: 'pedick',
+                seed: 1,
+                record: '11-3',
+                pts: 1722.88,
+                ppg: '123.1',
+                efficiency: '86.0%',
+                narrative: [
+                    "nendy grabbed the 1-seed with an 11-3 record and an eight-game winning streak that broke the league open mid-season. Roster construction did the heavy lifting: nendy drafted well in the startup, then upgraded at QB when it mattered most.",
+                    "The CJ Stroud trade in week 10 changed the trajectory. nendy sent Khalil Herbert and future picks to doyersbeast for a QB on a tear. Stroud stabilized the position through the playoffs and gave nendy the weekly floor to survive bracket variance.",
+                    "In the semis, nendy handled DeezNutz02 128.70-108.12. The championship against andrewmcorral played out clean: 132.62-114.88. No drama, no miracle comeback. The best team all season lifted the first trophy."
+                ],
+                playoffPath: [
+                    { round: 'Round 1', result: 'BYE', opponent: '1-seed bye', champScore: null, oppScore: null },
+                    { round: 'Semifinals', result: 'WIN', opponent: 'DeezNutz02', champScore: 128.70, oppScore: 108.12 },
+                    { round: 'Championship', result: 'WIN', opponent: 'andrewmcorral', champScore: 132.62, oppScore: 114.88, isChampionship: true }
+                ],
+                moves: [
+                    { icon: '🔄', label: 'Week 10 Trade', desc: 'Acquired CJ Stroud from doyersbeast for Khalil Herbert + 2024 R1 + R3. Stroud was ascending and locked in the QB position through the playoff run.' },
+                    { icon: '📈', label: 'Startup Draft', desc: 'Built the foundation in the startup draft with young Rams pieces and a loaded WR room. The core held up all season.' }
+                ],
+                topWeeks: [
+                    { week: 'Wk 4', score: 185.10, opp: 'SweetSweet', oppScore: 89.52, win: true },
+                    { week: 'Wk 12', score: 156.36, opp: 'shaqdeezy', oppScore: 66.86, win: true },
+                    { week: 'Wk 7', score: 150.70, opp: 'bradysballzfdf', oppScore: 126.46, win: true },
+                    { week: 'Wk 1', score: 146.08, opp: 'JustinG66', oppScore: 115.70, win: true },
+                    { week: 'Ship', score: 132.62, opp: 'andrewmcorral', oppScore: 114.88, win: true }
+                ]
+            },
+            2024: {
+                owner: 'MrEton',
+                team: 'MrEton',
+                seed: 3,
+                record: '12-2',
+                pts: 1806.78,
+                ppg: '129.1',
+                efficiency: '85.4%',
+                narrative: [
+                    "MrEton went 12-2. In a 12-team dynasty league, that record had no precedent. MrEton set it, then backed it up in the bracket.",
+                    "The regular season told you this team was real by week 3, when MrEton dropped 152.38 on SweetSweet's 55.78. A 96-point margin in week 3 sent a message. The only two losses came in weeks where the opponent caught fire, not where MrEton fell apart.",
+                    "The playoff path ran through shaqdeezy (151.22-130.78 in the semis) and then the defending champion nendy in the final (144.86-132.10). Beating the reigning champ to win the ring made the statement louder. MrEton entered 2024 as a punchline, the team most likely to blow it up. Twelve wins later, nobody laughed."
+                ],
+                playoffPath: [
+                    { round: 'Round 1', result: 'BYE', opponent: '3-seed bye', champScore: null, oppScore: null },
+                    { round: 'Semifinals', result: 'WIN', opponent: 'shaqdeezy', champScore: 151.22, oppScore: 130.78 },
+                    { round: 'Championship', result: 'WIN', opponent: 'nendy', champScore: 144.86, oppScore: 132.10, isChampionship: true }
+                ],
+                moves: [
+                    { icon: '🧠', label: 'Roster Management', desc: 'MrEton won with sharp lineup decisions all year. 85.4% manager efficiency meant the right players sat in starting spots more than most managers managed.' },
+                    { icon: '📈', label: 'Year-Over-Year Jump', desc: 'From 5-9 in 2023 to 12-2 in 2024. A +45% points scored improvement without a single blockbuster trade. Roster development, not splash moves.' }
+                ],
+                topWeeks: [
+                    { week: 'Wk 14', score: 176.00, opp: 'doyersbeast', oppScore: 120.14, win: true },
+                    { week: 'Wk 3', score: 152.38, opp: 'SweetSweet', oppScore: 55.78, win: true },
+                    { week: 'Semi', score: 151.22, opp: 'shaqdeezy', oppScore: 130.78, win: true },
+                    { week: 'Ship', score: 144.86, opp: 'nendy', oppScore: 132.10, win: true },
+                    { week: 'Wk 8', score: 143.26, opp: 'grffnboss', oppScore: 102.88, win: true }
+                ]
+            },
+            2025: {
+                owner: 'doyersbeast',
+                team: 'Tanked for a chip',
+                seed: 6,
+                record: '10-4',
+                pts: 1673.30,
+                ppg: '119.5',
+                efficiency: '82.0%',
+                narrative: [
+                    "doyersbeast named the team \"Tanked for a chip\" before a single snap in this league's history. Three seasons later, that bet cashed.",
+                    "The defining move came in week 9. doyersbeast had spent the 1.01 rookie pick on Ashton Jeanty, then flipped him to MrEton for Justin Jefferson. A proven star over the hottest rookie in the class. By February, that looked like genius. Jefferson delivered when games counted; Jeanty was still learning on MrEton's rebuilding roster.",
+                    "As a 6-seed, doyersbeast had to win three straight playoff games. They beat DeezNutz02 in round 1 (116.70-98.26), edged andrewmcorral in a tight semifinal (151.50-146.20), then demolished jakeschwartz in the championship 159.64-114.44. A 45-point title game. The three-year tank plan executed to perfection."
+                ],
+                playoffPath: [
+                    { round: 'Round 1', result: 'WIN', opponent: 'DeezNutz02', champScore: 116.70, oppScore: 98.26 },
+                    { round: 'Semifinals', result: 'WIN', opponent: 'andrewmcorral', champScore: 151.50, oppScore: 146.20 },
+                    { round: 'Championship', result: 'WIN', opponent: 'jakeschwartz', champScore: 159.64, oppScore: 114.44, isChampionship: true }
+                ],
+                moves: [
+                    { icon: '🎯', label: 'Rookie Draft · 1.01', desc: 'Selected Ashton Jeanty with the prize pick of a multi-year tank. The asset that funded the championship trade.' },
+                    { icon: '🔄', label: 'Week 9 Trade', desc: 'Shipped Jeanty + 2028 R1 to MrEton for Justin Jefferson + 2026 R3. Jefferson became the playoff centerpiece. The move that turned a contender into a champion.' },
+                    { icon: '📉', label: 'The Three-Year Tank', desc: 'Went 5-9 in 2023, 7-7 in 2024, stacking picks and young talent. The 2025 roster was the payoff: 10-4 regular season, championship trophy.' }
+                ],
+                topWeeks: [
+                    { week: 'Ship', score: 159.64, opp: 'jakeschwartz', oppScore: 114.44, win: true },
+                    { week: 'Semi', score: 151.50, opp: 'andrewmcorral', oppScore: 146.20, win: true },
+                    { week: 'Wk 5', score: 155.84, opp: 'grffnboss', oppScore: 68.42, win: true },
+                    { week: 'Wk 11', score: 148.26, opp: 'SweetSweet', oppScore: 112.34, win: true },
+                    { week: 'R1', score: 116.70, opp: 'DeezNutz02', oppScore: 98.26, win: true }
+                ]
+            }
+        };
+
+        function openChampionshipRun(year) {
+            const data = championshipRunData[year];
+            if (!data) return;
+            const overlay = document.getElementById('champRunOverlay');
+            const content = document.getElementById('champRunContent');
+
+            // Build playoff path HTML
+            let pathHtml = '';
+            data.playoffPath.forEach((step, i) => {
+                if (i > 0) pathHtml += '<div class="champ-run-path-arrow">▸</div>';
+                const isBye = step.result === 'BYE';
+                const isShip = step.isChampionship;
+                const margin = (!isBye && step.champScore && step.oppScore) ? (step.champScore - step.oppScore).toFixed(2) : null;
+                pathHtml += `
+                    <div class="champ-run-path-step ${isShip ? 'championship' : ''}">
+                        <div class="step-round">${step.round}</div>
+                        ${isBye ? `
+                            <div class="step-result" style="color: var(--text-secondary);">BYE</div>
+                            <div class="step-opponent">${step.opponent}</div>
+                            <div class="step-score" style="font-size:0.9rem; color: var(--text-secondary);">—</div>
+                        ` : `
+                            <div class="step-result">${isShip ? '🏆 ' : ''}W</div>
+                            <div class="step-opponent">vs ${step.opponent}</div>
+                            <div class="step-score">${step.champScore} - ${step.oppScore}</div>
+                            ${margin ? `<div class="step-margin">+${margin} pts</div>` : ''}
+                        `}
+                    </div>`;
+            });
+
+            // Build moves HTML
+            let movesHtml = data.moves.map(m => `
+                <div class="champ-run-move">
+                    <div class="champ-run-move-icon">${m.icon}</div>
+                    <div class="champ-run-move-text">
+                        <div class="champ-run-move-label">${m.label}</div>
+                        <div class="champ-run-move-desc">${m.desc}</div>
+                    </div>
+                </div>`).join('');
+
+            // Build top weeks HTML
+            let weeksHtml = data.topWeeks.map(w => `
+                <div class="champ-run-week">
+                    <div class="week-num">${w.week}</div>
+                    <div class="week-score">${w.score.toFixed(2)}</div>
+                    <div class="week-opp">vs ${w.opp}</div>
+                    <div class="week-result ${w.win ? 'win' : 'loss'}">${w.win ? 'W' : 'L'} ${w.oppScore.toFixed(2)}</div>
+                </div>`).join('');
+
+            // Build narrative HTML
+            let narrativeHtml = data.narrative.map(p => `<p>${p}</p>`).join('');
+
+            content.innerHTML = `
+                <div class="champ-run-hero">
+                    <div class="champ-run-year">${year} Champion</div>
+                    <div class="champ-run-title">${data.owner}</div>
+                    <div class="champ-run-team">${data.team}</div>
+                    <div class="champ-run-record-bar">
+                        <div class="champ-run-record-item"><div class="champ-run-record-val">${data.record}</div><div class="champ-run-record-lbl">Record</div></div>
+                        <div class="champ-run-record-item"><div class="champ-run-record-val">${data.pts.toFixed(1)}</div><div class="champ-run-record-lbl">Points For</div></div>
+                        <div class="champ-run-record-item"><div class="champ-run-record-val">${data.ppg}</div><div class="champ-run-record-lbl">PPG</div></div>
+                        <div class="champ-run-record-item"><div class="champ-run-record-val">#${data.seed}</div><div class="champ-run-record-lbl">Seed</div></div>
+                        <div class="champ-run-record-item"><div class="champ-run-record-val">${data.efficiency}</div><div class="champ-run-record-lbl">Mgr Eff.</div></div>
+                    </div>
+                </div>
+                <div class="champ-run-body">
+                    <div class="champ-run-section">
+                        <div class="champ-run-section-title">The Championship Run</div>
+                        <div class="champ-run-narrative">${narrativeHtml}</div>
+                    </div>
+                    <div class="champ-run-section">
+                        <div class="champ-run-section-title">Playoff Path</div>
+                        <div class="champ-run-path">${pathHtml}</div>
+                    </div>
+                    <div class="champ-run-section">
+                        <div class="champ-run-section-title">Season-Defining Moves</div>
+                        <div class="champ-run-moves">${movesHtml}</div>
+                    </div>
+                    <div class="champ-run-section">
+                        <div class="champ-run-section-title">Top Performances</div>
+                        <div class="champ-run-topweeks">${weeksHtml}</div>
+                    </div>
+                </div>`;
+
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close championship run modal
+        document.getElementById('champRunClose').addEventListener('click', () => {
+            document.getElementById('champRunOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+        });
+        document.getElementById('champRunOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                e.currentTarget.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ═══════════════════════════════════════════
         //  FULL TEAM PROFILE PAGE
         // ═══════════════════════════════════════════
         let tpChartInst = null;
@@ -7246,7 +7511,7 @@
                     <span class="mobile-more-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
                     </span>
-                    <span class="mobile-more-label">Transactions</span>
+                    <span class="mobile-more-label">Trades</span>
                     <span class="mobile-more-chevron">›</span>
                 </li>
                 <li class="mobile-more-item" data-more-tab="trends">
