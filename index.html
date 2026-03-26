@@ -3982,7 +3982,9 @@
 
         function getOwnerDisplay(owner) {
             const d = allTimeData[owner];
-            if (!d || !d.co_owners || d.co_owners.length === 0) return owner;
+            if (!d) return owner;
+            if (d.display_name) return d.display_name;
+            if (!d.co_owners || d.co_owners.length === 0) return owner;
             return owner + ' / ' + d.co_owners.join(' / ');
         }
 
