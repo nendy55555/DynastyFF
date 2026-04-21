@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Til Death do us Part - Dynasty Fantasy Football League</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <!-- Chart.js pinned to 4.4.1 with SRI integrity hash (cdnjs source of truth).
+         If this hash ever mismatches (CDN tamper / version change), the browser refuses to load the script.
+         To upgrade: fetch new hash from https://api.cdnjs.com/libraries/Chart.js/{version}?fields=sri -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"
+            integrity="sha512-ZwR1/gSZM3ai6vCdI+LVF1zSq/5HznD3ZSTk7kajkaj4D292NLuduDCO1c/NT8Id+jE58KYLKT7hXnbtryGmMg=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
 
     <style>
         * {
@@ -3151,26 +3157,12 @@
             <h2 class="section-header">League Overview</h2>
 
             <div class="stats-grid">
-                <div class="stat-card">
-                    <span class="stat-label">Total Games Played</span>
-                    <div class="stat-value">252</div>
-                    <div class="stat-subtext">6 matchups × 14 weeks × 3 seasons</div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Highest Single Week</span>
-                    <div class="stat-value">222.74</div>
-                    <div class="stat-subtext">JustinG66 (2023 Week 3)</div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Longest Win Streak</span>
-                    <div class="stat-value">8 Games</div>
-                    <div class="stat-subtext">nendy — different breed 😤</div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Biggest Blowout</span>
-                    <div class="stat-value">119.80 pts</div>
-                    <div class="stat-subtext">doyersbeast 180.5 vs SweetSweet 60.7 (2024 W11)</div>
-                </div>
+                <div class="stat-card" id="overviewStatGames"></div>
+                <div class="stat-card" id="overviewStatHighWeek"></div>
+                <div class="stat-card" id="overviewStatStreak"></div>
+                <div class="stat-card" id="overviewStatBlowout"></div>
+                <div class="stat-card" id="overviewStatTrades"></div>
+                <div class="stat-card" id="overviewStatTrader"></div>
             </div>
 
             <div>
@@ -3867,6 +3859,66 @@
     </div>
 
     <script>
+        // ═══════════════════════════════════════════
+        //  LEAGUE CONFIG — edit these when updating
+        // ═══════════════════════════════════════════
+        const CONFIG = {
+            // League identity
+            LEAGUE_START_YEAR: 2023,
+            CURRENT_SEASON: 2025,
+            TOTAL_TEAMS: 12,
+            SLEEPER_USERNAME: 'nendy',
+            CORS_PROXY: 'https://corsproxy.io/?',                 // primary proxy (backwards-compat)
+            CORS_PROXY_FALLBACKS: [                                 // tried in order if primary fails
+                'https://corsproxy.io/?',
+                'https://api.allorigins.win/raw?url=',
+                'https://api.codetabs.com/v1/proxy?quest='
+            ],
+            // localStorage cache TTL for KTC/FP fetches (ms). 24h by default.
+            EXTERNAL_CACHE_TTL_MS: 24 * 60 * 60 * 1000,
+            // When stale but not refreshed successfully, show a yellow banner after this long.
+            STALE_WARN_MS: 7 * 24 * 60 * 60 * 1000,                 // 7 days
+
+            // Derived: all season keys (auto-generated from start → current)
+            get SEASONS() {
+                const s = [];
+                for (let y = this.LEAGUE_START_YEAR; y <= this.CURRENT_SEASON; y++) s.push(String(y));
+                return s;
+            },
+
+            // Pick valuation tuning
+            PICK_DISCOUNT_PER_YEAR: 0.05,       // 5% discount per year into the future
+            TOP3_PICK_BUMP: 1.15,               // 15% premium for top-3 picks
+            PICK_TIER_BOUNDARIES: { EARLY: 4, MID: 8 }, // slot 1-4 = Early, 5-8 = Mid, 9+ = Late
+
+            // Trade grading — rawAdj coefficients
+            TRADE_GRADE: {
+                ELITE_WEIGHT:    0.033,  // exponent 8 — super-elite premium
+                ANCHOR_WEIGHT:   0.239,  // exponent 1.3 — best-in-trade anchor
+                FLOOR_WEIGHT:    0.057,  // exponent 1.28 — floor value
+                BASE_WEIGHT:     0.1,    // constant floor multiplier
+                THRESHOLDS: [
+                    { min:  30, grade: 'A+', color: '#22c55e' },
+                    { min:  18, grade: 'A',  color: '#22c55e' },
+                    { min:   8, grade: 'B+', color: '#4ade80' },
+                    { min:  -3, grade: 'B',  color: '#94a3b8' },
+                    { min: -10, grade: 'C+', color: '#f59e0b' },
+                    { min: -20, grade: 'C',  color: '#f97316' },
+                    { min: -30, grade: 'D',  color: '#ef4444' },
+                    { min: -Infinity, grade: 'F', color: '#dc2626' }
+                ]
+            },
+
+            // Draft grading — round multipliers
+            DRAFT_GRADE: {
+                ROUND3_MULTIPLIER: 1.12,
+                ROUND4_MULTIPLIER: 1.22,
+                TE_LATE_PENALTY:   1.35,
+                KTC_RANK_SPAN: 350,
+                STARTUP_RANK_SPAN: 300
+            }
+        };
+
         // LEAGUE DATA
         const allTimeData = {
             "nendy": {"team_name":"pedick","total_wins":30,"total_losses":12,"total_fpts":5375.46,"total_fpts_against":4408.6,"total_ppts":6252.4,"avg_score":"127.99","max_week":"185.10","min_week":"80.74","median":"130.14","stdev":"23.99","manager_efficiency":"86.0","win_pct":"71.4","seasons":{"2023":{"wins":11,"losses":3,"fpts":1722.88,"ppts":2076.72,"fpts_against":1438.08},"2024":{"wins":8,"losses":6,"fpts":1816.08,"ppts":2084.44,"fpts_against":1585.56},"2025":{"wins":11,"losses":3,"fpts":1836.5,"ppts":2091.24,"fpts_against":1384.96}}},
@@ -4052,6 +4104,122 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
+        // ═══════════════════════════════════════════
+        //  DATA INTEGRITY CHECK (runs once on load)
+        // ═══════════════════════════════════════════
+        (function validateData() {
+            const errors = [];
+            const owners = Object.keys(allTimeData);
+            if (owners.length !== CONFIG.TOTAL_TEAMS) {
+                errors.push('allTimeData has ' + owners.length + ' owners, expected ' + CONFIG.TOTAL_TEAMS);
+            }
+            owners.forEach(o => {
+                const d = allTimeData[o];
+                if (!d.seasons) { errors.push(o + ': missing seasons object'); return; }
+                CONFIG.SEASONS.forEach(yr => {
+                    const s = d.seasons[yr];
+                    if (!s) { errors.push(o + ': missing season ' + yr); return; }
+                    if (typeof s.wins !== 'number' || typeof s.losses !== 'number') {
+                        errors.push(o + ' ' + yr + ': wins/losses not numbers');
+                    }
+                    if (typeof s.fpts !== 'number' || s.fpts < 0) {
+                        errors.push(o + ' ' + yr + ': invalid fpts');
+                    }
+                });
+                // Verify aggregate totals roughly match season sums
+                const seasonWins = CONFIG.SEASONS.reduce((sum, yr) => sum + (d.seasons[yr]?.wins || 0), 0);
+                if (seasonWins !== d.total_wins) {
+                    errors.push(o + ': season wins sum (' + seasonWins + ') !== total_wins (' + d.total_wins + ')');
+                }
+            });
+            // Validate transaction data
+            if (!transactionData?.trades || !Array.isArray(transactionData.trades)) {
+                errors.push('transactionData.trades is missing or not an array');
+            }
+            if (errors.length) {
+                console.warn('[DynastyFF] Data validation issues:\n  • ' + errors.join('\n  • '));
+                // Surface the first N errors as a dismissible page banner so issues don't stay invisible
+                // when Thomas-in-six-months updates a season and forgets to check the console.
+                try {
+                    const MAX_SHOW = 4;
+                    const banner = document.createElement('div');
+                    banner.setAttribute('role', 'alert');
+                    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#f85149;color:#fff;padding:10px 48px 10px 16px;font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.4;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+                    const summary = errors.slice(0, MAX_SHOW).join(' • ');
+                    const more = errors.length > MAX_SHOW ? ' (+' + (errors.length - MAX_SHOW) + ' more — see console)' : '';
+                    banner.textContent = 'Data integrity issues: ' + summary + more;
+                    const close = document.createElement('button');
+                    close.textContent = '×';
+                    close.setAttribute('aria-label', 'Dismiss');
+                    close.style.cssText = 'position:absolute;top:6px;right:12px;background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;padding:0 4px;';
+                    close.onclick = () => banner.remove();
+                    banner.appendChild(close);
+                    // Append once DOM is parsed
+                    if (document.body) document.body.appendChild(banner);
+                    else document.addEventListener('DOMContentLoaded', () => document.body.appendChild(banner));
+                } catch (e) { /* non-fatal */ }
+            }
+        })();
+
+        // ═══════════════════════════════════════════
+        //  DYNAMIC OVERVIEW STATS (computed from data)
+        // ═══════════════════════════════════════════
+        (function populateOverviewStats() {
+            const owners = Object.keys(allTimeData);
+            const numSeasons = CONFIG.SEASONS.length;
+            const matchupsPerWeek = CONFIG.TOTAL_TEAMS / 2;
+            const weeksPerSeason = 14; // regular season
+            const totalGames = matchupsPerWeek * weeksPerSeason * numSeasons * 2; // each matchup = 2 games
+
+            function setCard(id, label, value, subtext) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = '<span class="stat-label">' + label + '</span><div class="stat-value">' + value + '</div><div class="stat-subtext">' + subtext + '</div>';
+            }
+
+            // Total games
+            setCard('overviewStatGames', 'Total Games Played', totalGames,
+                matchupsPerWeek + ' matchups × ' + weeksPerSeason + ' weeks × ' + numSeasons + ' seasons');
+
+            // Highest single week (from recordsData if available)
+            if (typeof recordsData !== 'undefined' && recordsData.topWeekScores?.length) {
+                const hs = recordsData.topWeekScores[0];
+                setCard('overviewStatHighWeek', 'Highest Single Week', hs.score.toFixed(2),
+                    hs.owner + ' (' + hs.season + ' Week ' + hs.week + ')');
+            }
+
+            // Longest win streak
+            let bestStreak = 0, bestStreakOwner = '';
+            owners.forEach(o => {
+                const s = streakData[o];
+                if (s && s.longestWin > bestStreak) { bestStreak = s.longestWin; bestStreakOwner = o; }
+            });
+            setCard('overviewStatStreak', 'Longest Win Streak', bestStreak + ' Games', bestStreakOwner);
+
+            // Biggest blowout (from recordsData if available)
+            if (typeof recordsData !== 'undefined' && recordsData.biggestBlowouts?.length) {
+                const bb = recordsData.biggestBlowouts[0];
+                setCard('overviewStatBlowout', 'Biggest Blowout', bb.margin.toFixed(1) + ' pts',
+                    bb.winner + ' ' + bb.winScore.toFixed(1) + ' vs ' + bb.loser + ' ' + bb.loseScore.toFixed(1) + ' (' + bb.season + ' W' + bb.week + ')');
+            }
+
+            // Total trades
+            const totalTrades = transactionData?.trades?.length || 0;
+            setCard('overviewStatTrades', 'Total Trades', totalTrades,
+                (totalTrades / numSeasons).toFixed(1) + ' per season');
+
+            // Most active trader
+            const tradeCounts = {};
+            (transactionData?.trades || []).forEach(t => {
+                Object.keys(t[3]).forEach(team => { tradeCounts[team] = (tradeCounts[team] || 0) + 1; });
+            });
+            const topTrader = Object.entries(tradeCounts).sort((a, b) => b[1] - a[1])[0];
+            if (topTrader) {
+                setCard('overviewStatTrader', 'Most Active Trader', topTrader[0],
+                    topTrader[1] + ' trades across ' + numSeasons + ' seasons');
+            }
+        })();
+
         // STANDINGS TABLE — Sortable
         let currentSortCol = 'win_pct';
         let currentSortDir = 'desc';
@@ -4060,8 +4228,9 @@
         // Build per-season display data from allTimeData seasons
         function getSeasonDisplayData(owner, season) {
             const raw = allTimeData[owner];
+            if (!raw) { console.warn('[DynastyFF] Unknown owner in standings:', owner); return null; }
             if (season === 'all') return raw;
-            const s = raw.seasons[season];
+            const s = raw.seasons?.[season];
             if (!s) return null;
             const totalGames = s.wins + s.losses;
             const winPct = totalGames > 0 ? ((s.wins / totalGames) * 100).toFixed(1) : '0.0';
@@ -4216,6 +4385,7 @@
         //  • Roster construction bonus (elite player > sum of lesser parts)
         //  • Time decay (older trades evaluated at today's values = hindsight grading)
         function getAssetKTC(assetName, originalOwner) {
+            if (!assetName || typeof assetName !== 'string') return 0;
             // Check if it's a future draft pick (e.g., "2026 R1")
             const futurePickMatch = assetName.match(/^(\d{4})\s+R(\d)$/);
             if (futurePickMatch) {
@@ -4232,10 +4402,10 @@
                 let val = ktcPickValues[key]?.[closestYear] || 0;
                 // 15% bump for top-3 picks in each rookie draft class
                 if (round === '1' && originalOwner && pickProjection2026[originalOwner]?.pick <= 3) {
-                    val *= 1.15;
+                    val *= CONFIG.TOP3_PICK_BUMP;
                 }
-                const yearsOut = Math.max(0, parseInt(year) - 2025);
-                val *= (1 - yearsOut * 0.05);
+                const yearsOut = Math.max(0, parseInt(year) - CONFIG.CURRENT_SEASON);
+                val *= (1 - yearsOut * CONFIG.PICK_DISCOUNT_PER_YEAR);
                 return Math.round(val);
             }
             // Check if it's an exact past draft pick (e.g., "2024 1.12" or "2025 2.01")
@@ -4245,13 +4415,13 @@
                 const round = exactPickMatch[2];
                 const slot = parseInt(exactPickMatch[3]);
                 const roundName = round === '1' ? '1st' : round === '2' ? '2nd' : round === '3' ? '3rd' : '4th';
-                const tier = slot <= 4 ? 'Early' : slot <= 8 ? 'Mid' : 'Late';
+                const tier = slot <= CONFIG.PICK_TIER_BOUNDARIES.EARLY ? 'Early' : slot <= CONFIG.PICK_TIER_BOUNDARIES.MID ? 'Mid' : 'Late';
                 const key = tier + ' ' + roundName;
                 const closestYear = Object.keys(ktcPickValues[key] || {}).sort((a,b) => Math.abs(a - year) - Math.abs(b - year))[0];
                 let pickVal = ktcPickValues[key]?.[closestYear] || 0;
                 // 15% bump for top-3 picks in each rookie draft class
                 if (round === '1' && slot <= 3) {
-                    pickVal = Math.round(pickVal * 1.15);
+                    pickVal = Math.round(pickVal * CONFIG.TOP3_PICK_BUMP);
                 }
                 return pickVal;
             }
@@ -4261,7 +4431,9 @@
         }
 
         function gradeTrade(sides, timestamp) {
+            if (!sides || typeof sides !== 'object') { console.warn('[DynastyFF] gradeTrade called with invalid sides'); return {}; }
             const teams = Object.keys(sides);
+            if (teams.length < 2) { console.warn('[DynastyFF] Trade has fewer than 2 teams'); return {}; }
             const results = {};
 
             // KTC Value Adjustment algorithm (reverse-engineered from KeepTradeCut)
@@ -4323,11 +4495,12 @@
 
             function rawAdj(p) {
                 if (p <= 0) return 0;
+                const G = CONFIG.TRADE_GRADE;
                 return p * (
-                    0.033  * Math.pow(p / v,          8)    +
-                    0.239  * Math.pow(p / t,          1.3)  +
-                    0.057  * Math.pow(p / (v + 2000), 1.28) +
-                    0.1
+                    G.ELITE_WEIGHT  * Math.pow(p / v,          8)    +
+                    G.ANCHOR_WEIGHT * Math.pow(p / t,          1.3)  +
+                    G.FLOOR_WEIGHT  * Math.pow(p / (v + 2000), 1.28) +
+                    G.BASE_WEIGHT
                 );
             }
 
@@ -4346,14 +4519,9 @@
                 const pctDiff = (diff / avgAdj) * 100;
 
                 let grade, gradeColor;
-                if      (pctDiff >= 30)  { grade = 'A+'; gradeColor = '#22c55e'; }
-                else if (pctDiff >= 18)  { grade = 'A';  gradeColor = '#22c55e'; }
-                else if (pctDiff >= 8)   { grade = 'B+'; gradeColor = '#4ade80'; }
-                else if (pctDiff >= -3)  { grade = 'B';  gradeColor = '#94a3b8'; }
-                else if (pctDiff >= -10) { grade = 'C+'; gradeColor = '#f59e0b'; }
-                else if (pctDiff >= -20) { grade = 'C';  gradeColor = '#f97316'; }
-                else if (pctDiff >= -30) { grade = 'D';  gradeColor = '#ef4444'; }
-                else                     { grade = 'F';  gradeColor = '#dc2626'; }
+                const threshold = CONFIG.TRADE_GRADE.THRESHOLDS.find(t => pctDiff >= t.min);
+                grade = threshold.grade;
+                gradeColor = threshold.color;
 
                 results[team] = { gotVal, gaveVal, rawAdjGot, rawAdjGave, diff, pctDiff: Math.round(pctDiff), grade, gradeColor };
             });
@@ -5503,6 +5671,38 @@
         const ktcValues = {"Bijan Robinson":[9998,1],"Ja'Marr Chase":[9993,2],"Jahmyr Gibbs":[9978,3],"Jaxon Smith-Njigba":[9972,4],"Puka Nacua":[9648,5],"Malik Nabers":[8014,6],"Brock Bowers":[7930,7],"Trey McBride":[7929,8],"Amon-Ra St. Brown":[7907,9],"Ashton Jeanty":[7896,10],"Justin Jefferson":[7893,11],"CeeDee Lamb":[7889,12],"Jeremiyah Love":[7634,13],"Josh Allen":[7628,14],"De'Von Achane":[7413,15],"Drake London":[7364,16],"Omarion Hampton":[7326,17],"Tetairoa McMillan":[7228,18],"2027 Early 1st":[7072,19],"James Cook":[6869,20],"Jonathan Taylor":[6842,21],"Emeka Egbuka":[6815,22],"George Pickens":[6776,23],"Drake Maye":[6687,24],"Colston Loveland":[6642,25],"Kenneth Walker III":[6590,26],"Kenneth Walker":[6590,26],"Garrett Wilson":[6532,27],"2026 Early 1st":[6526,28],"Nico Collins":[6486,29],"Chris Olave":[6427,30],"Tyler Warren":[6387,31],"Breece Hall":[6289,32],"Rome Odunze":[6287,33],"Jayden Daniels":[6286,34],"TreVeyon Henderson":[6283,35],"Lamar Jackson":[6261,36],"Quinshon Judkins":[6253,37],"Ladd McConkey":[6192,38],"Luther Burden":[6180,39],"Carnell Tate":[6057,40],"Bucky Irving":[6038,41],"2027 Mid 1st":[5890,42],"Christian McCaffrey":[5871,43],"Chase Brown":[5761,44],"Makai Lemon":[5748,45],"Kyren Williams":[5717,46],"Marvin Harrison Jr.":[5699,47],"Marvin Harrison Jr":[5699,47],"Marvin Harrison":[5699,47],"Brian Thomas Jr.":[5695,48],"Brian Thomas Jr":[5695,48],"Brian Thomas":[5695,48],"Tee Higgins":[5672,49],"Joe Burrow":[5670,50],"Jaylen Waddle":[5632,51],"Saquon Barkley":[5615,52],"Rashee Rice":[5615,53],"2028 Early 1st":[5610,54],"DeVonta Smith":[5584,55],"Caleb Williams":[5567,56],"A.J. Brown":[5552,57],"Jordyn Tyson":[5542,58],"Harold Fannin":[5540,59],"Tucker Kraft":[5539,60],"Jaxson Dart":[5518,61],"Zay Flowers":[5510,62],"2027 Late 1st":[5506,63],"2026 Mid 1st":[5503,64],"Travis Etienne":[5502,65],"Javonte Williams":[5497,66],"Patrick Mahomes":[5485,67],"Jameson Williams":[5485,68],"Jalen Hurts":[5451,69],"Justin Herbert":[5357,70],"Josh Jacobs":[5356,71],"Cam Skattebo":[5346,72],"Sam LaPorta":[5291,73],"Alec Pierce":[5230,74],"2028 Mid 1st":[5208,75],"Kyle Pitts":[5193,76],"Kenyon Sadiq":[5108,77],"Bo Nix":[5067,78],"2026 Late 1st":[5032,79],"Bhayshul Tuten":[4975,80],"D.J. Moore":[4892,81],"Jordan Addison":[4886,82],"Fernando Mendoza":[4810,83],"RJ Harvey":[4808,84],"2028 Late 1st":[4771,85],"Zach Charbonnet":[4763,86],"Oronde Gadsden":[4762,87],"Derrick Henry":[4753,88],"Trevor Lawrence":[4680,89],"Wan'Dale Robinson":[4651,90],"Michael Wilson":[4627,91],"Brock Purdy":[4622,92],"KC Concepcion":[4615,93],"2027 Early 2nd":[4613,94],"Romeo Doubs":[4579,95],"DK Metcalf":[4569,96],"Ricky Pearsall":[4540,97],"Jordan Love":[4525,98],"Christian Watson":[4519,99],"Travis Hunter":[4518,100],"Kyle Monangai":[4489,101],"Matthew Golden":[4450,102],"Dak Prescott":[4435,103],"Jayden Higgins":[4411,104],"Parker Washington":[4406,105],"Davante Adams":[4397,106],"D'Andre Swift":[4389,107],"David Montgomery":[4375,108],"Tyler Allgeier":[4375,109],"Michael Pittman":[4371,110],"Isaiah Likely":[4354,111],"2026 Early 2nd":[4290,112],"Baker Mayfield":[4275,113],"Xavier Worthy":[4188,114],"Terry McLaurin":[4169,115],"Josh Downs":[4139,116],"Quentin Johnston":[4134,117],"Blake Corum":[4130,118],"Jakobi Meyers":[4128,119],"Chuba Hubbard":[4115,121],"Mike Evans":[4078,122],"Dalton Kincaid":[4078,123],"Jake Ferguson":[4074,124],"2027 Mid 2nd":[4069,125],"Jaylen Warren":[4068,126],"Jayden Reed":[4060,127],"Rico Dowdle":[4041,128],"C.J. Stroud":[4000,129],"Cam Ward":[3997,130],"Courtland Sutton":[3993,131],"George Kittle":[3975,133],"Sam Darnold":[3914,134],"Jalen Coker":[3878,135],"Khalil Shakir":[3869,136],"2026 Mid 2nd":[3829,138],"2028 Early 2nd":[3823,139],"Brenton Strange":[3818,140],"Jalen McMillan":[3803,141],"Jared Goff":[3785,142],"2027 Late 2nd":[3775,143],"Kayshon Boutte":[3729,144],"Rhamondre Stevenson":[3715,145],"Troy Franklin":[3714,146],"Kyler Murray":[3695,147],"Rashid Shaheed":[3695,148],"J.K. Dobbins":[3668,149],"Kenneth Gainwell":[3650,150],"Mason Taylor":[3615,153],"2026 Late 2nd":[3584,154],"2028 Mid 2nd":[3569,156],"Pat Bryant":[3568,157],"Woody Marks":[3564,158],"Elic Ayomanor":[3554,159],"Chris Godwin":[3544,160],"Jacory Croskey-Merritt":[3536,161],"Bryce Young":[3529,162],"Jauan Jennings":[3523,163],"Jaylin Noel":[3510,165],"Isaac TeSlaa":[3506,166],"Braelon Allen":[3502,167],"Tre Harris":[3496,168],"Chimere Dike":[3493,169],"AJ Barner":[3490,170],"Terrance Ferguson":[3470,171],"Matthew Stafford":[3453,172],"Jordan Mason":[3419,174],"Rachaad White":[3409,175],"2028 Late 2nd":[3403,176],"Kyle Williams":[3402,177],"Tyjae Spears":[3387,178],"Dylan Sampson":[3382,179],"T.J. Hockenson":[3360,180],"David Njoku":[3347,181],"Tony Pollard":[3347,182],"Adonai Mitchell":[3308,183],"Jerry Jeudy":[3303,184],"Mark Andrews":[3289,185],"Ollie Gordon":[3283,186],"Brandon Aiyuk":[3270,187],"Tyrone Tracy":[3244,189],"Elijah Arroyo":[3244,190],"Dallas Goedert":[3238,191],"Sean Tucker":[3188,194],"Kaleb Johnson":[3188,195],"Kimani Vidal":[3159,196],"Michael Penix Jr.":[3154,197],"Michael Penix Jr":[3154,197],"Michael Penix":[3154,197],"Nicholas Singleton":[3148,198],"Keon Coleman":[3139,199],"Tre Tucker":[3124,200],"Tank Dell":[3068,202],"Deebo Samuel":[3060,203],"Jack Bech":[3053,204],"Tez Johnson":[3048,205],"J.J. McCarthy":[3041,206],"Keaton Mitchell":[3034,207],"Gunnar Helm":[3034,208],"Theo Johnson":[3017,210],"Tank Bigsby":[3008,211],"Devin Neal":[2982,212],"Tyler Shough":[2944,214],"Stefon Diggs":[2938,215],"Isaiah Bond":[2923,216],"2027 Early 3rd":[2915,217],"Cade Otton":[2905,218],"Travis Kelce":[2902,219],"Dontayvion Wicks":[2883,220],"Juwan Johnson":[2879,221],"Isiah Pacheco":[2877,222],"Jaylen Wright":[2877,223],"Jaylen Warren":[4068,126],"2026 Early 3rd":[2842,225],"Malik Willis":[2828,226],"Hunter Henry":[2803,229],"Brian Robinson":[2801,230],"Tyreek Hill":[2755,232],"Jake Tonges":[2752,233],"Brashard Smith":[2750,234],"Dalton Schultz":[2722,235],"Malik Washington":[2719,236],"Demario Douglas":[2704,237],"Kendre Miller":[2703,238],"2027 Mid 3rd":[2703,239],"2026 Mid 3rd":[2689,240],"Alvin Kamara":[2681,241],"Chris Rodriguez":[2676,242],"Cedric Tillman":[2657,243],"Xavier Legette":[2633,244],"Trevor Etienne":[2620,245],"2028 Early 3rd":[2607,247],"Emanuel Wilson":[2599,248],"Rashod Bateman":[2597,249],"Pat Freiermuth":[2589,250],"2027 Late 3rd":[2568,253],"Dont'e Thornton":[2563,254],"Jaydon Blue":[2556,255],"2026 Late 3rd":[2536,257],"DJ Giddens":[2522,258],"Colby Parkinson":[2520,259],"Ja'Tavion Sanders":[2519,260],"Darnell Mooney":[2502,261],"James Conner":[2500,263],"Cole Kmet":[2473,264],"Isaiah Davis":[2460,265],"Aaron Jones":[2449,266],"Ray Davis":[2445,268],"Jalen Milroe":[2411,269],"Jaylin Lane":[2409,270],"2028 Mid 3rd":[2391,272],"Christian Kirk":[2387,273],"Ben Sinnott":[2386,274],"Ryan Flournoy":[2346,276],"Tua Tagovailoa":[2277,279],"Najee Harris":[2271,280],"2028 Late 3rd":[2256,281],"Luke Musgrave":[2253,282],"Marquise Brown":[2248,283],"Shedeur Sanders":[2246,284],"Jalen Royals":[2231,285],"Jordan James":[2221,286],"Luke McCaffrey":[2209,287],"Justin Fields":[2208,288],"Anthony Richardson":[2208,289],"John Metchie":[2193,291],"Evan Engram":[2141,293],"MarShawn Lloyd":[2138,294],"Jarquez Hunter":[2119,295],"Tahj Brooks":[2094,296],"2026 Early 4th":[2080,297],"Roman Wilson":[2080,298],"Audric Estime":[2079,299],"2027 Early 4th":[2079,300],"Calvin Ridley":[2071,301],"Cooper Kupp":[2068,302],"Dawson Knox":[2067,303],"Devaughn Vele":[2053,305],"Calvin Austin III":[2030,306],"Calvin Austin":[2030,306],"Keenan Allen":[2025,307],"Noah Gray":[2022,308],"Andrei Iosivas":[2017,309],"Will Shipley":[2017,310],"Savion Williams":[2017,311],"Jahan Dotson":[2014,312],"KeAndre Lambert-Smith":[2011,313],"2027 Mid 4th":[1985,314],"Jimmy Horn":[1982,315],"Jordan Whittington":[1978,316],"Darius Slayton":[1958,317],"Isaac Guerendo":[1935,318],"Jerome Ford":[1933,319],"2026 Mid 4th":[1931,320],"Joshua Palmer":[1900,323],"Jaleel McLaughlin":[1893,324],"2027 Late 4th":[1866,326],"2028 Early 4th":[1862,327],"Jalen Tolbert":[1844,332],"2026 Late 4th":[1826,333],"Jonnu Smith":[1816,334],"Devin Singletary":[1816,335],"Raheim Sanders":[1785,341],"Ricky Pearsall":[4540,97],"Roschon Johnson":[1695,351],"Mike Gesicki":[1692,352],"Joe Mixon":[1685,353],"Michael Carter":[1646,357],"Jacoby Brissett":[1607,359],"Ty Johnson":[1600,360],"Justice Hill":[1585,362],"Emari Demercado":[1577,363],"Trey Palmer":[1559,364],"Spencer Rattler":[1306,401],"Javon Baker":[1299,405],"Zach Ertz":[1261,414],"Kareem Hunt":[1450,381],"Deuce Vaughn":[1119,431],"Nick Chubb":[1075,437],"Elijah Mitchell":[1042,447],"Miles Sanders":[1021,450],"Curtis Samuel":[1019,451],"Darren Waller":[1409,389],"Geno Smith":[1409,390],"Damien Martinez":[1393,394],"DeAndre Hopkins":[987,455],"Antonio Gibson":[949,460],"Zavier Scott":[947,462],"Will Dissly":[846,480],"Trey Lance":[837,481],"Tyler Conklin":[812,484],"Demarcus Robinson":[1054,442],"Gardner Minshew":[380,544],"DJ Moore":[4892,81],"Deandre Hopkins":[987,455],"Nick Singleton":[3148,198],"Kevin Concepcion":[4615,93],"Josh Palmer":[1900,323],"DeMario Douglas":[2704,237],"Tre' Harris":[3496,168],"Brandon Aubrey":[1850,500],"Cameron Dicker":[1650,520],"Ka'imi Fairbairn":[1500,540],"Will Reichard":[1450,545],"Chris Boswell":[1400,550],"Cam Little":[1350,555],"Jake Bates":[1300,560],"Jason Myers":[1200,570],"Evan McPherson":[1150,575],"Matt Prater":[800,600],"Brandon McManus":[750,605],"Tyler Bass":[1100,580],"Cairo Santos":[700,610],"Eddy Pineiro":[600,620],"Andy Borregales":[500,630],"Harrison Butker":[1700,510],"Wil Lutz":[1000,585],"Philadelphia Eagles":[2100,450],"Buffalo Bills":[1900,460],"Kansas City Chiefs":[1800,465],"San Francisco 49ers":[1750,468],"Detroit Lions":[1700,470],"Houston Texans":[1650,475],"Pittsburgh Steelers":[1600,478],"Baltimore Ravens":[1600,479],"Denver Broncos":[1550,480],"Tampa Bay Buccaneers":[1500,482],"Green Bay Packers":[1450,484],"Los Angeles Chargers":[1450,485],"Seattle Seahawks":[1400,487],"Los Angeles Rams":[1400,488],"Cincinnati Bengals":[1350,490],"New Orleans Saints":[1300,492],"Indianapolis Colts":[1250,495],"New England Patriots":[1200,498],"Jacksonville Jaguars":[1150,500],"New York Jets":[1100,505],"Dallas Cowboys":[1050,510],"Miami Dolphins":[1000,515],"Carolina Panthers":[950,520],"Cleveland Browns":[950,522],"Washington Commanders":[1300,493]};
         const fpRanks = {"Ja'Marr Chase":"WR1","Puka Nacua":"WR2","Jaxon Smith-Njigba":"WR3","Bijan Robinson":"RB1","Jahmyr Gibbs":"RB2","CeeDee Lamb":"WR4","Justin Jefferson":"WR5","Amon-Ra St. Brown":"WR6","Malik Nabers":"WR7","Ashton Jeanty":"RB3","Drake London":"WR8","De'Von Achane":"RB4","Omarion Hampton":"RB5","Nico Collins":"WR9","James Cook III":"RB6","James Cook":"RB6","Tetairoa McMillan":"WR10","Jeremiyah Love":"RB7","Jonathan Taylor":"RB8","George Pickens":"WR11","Brock Bowers":"TE1","Josh Allen":"QB1","Trey McBride":"TE2","Garrett Wilson":"WR12","Chris Olave":"WR13","Emeka Egbuka":"WR14","Drake Maye":"QB2","Ladd McConkey":"WR15","Rashee Rice":"WR16","Tee Higgins":"WR17","A.J. Brown":"WR18","Carnell Tate":"WR19","Makai Lemon":"WR20","Breece Hall":"RB9","Lamar Jackson":"QB3","TreVeyon Henderson":"RB10","Jayden Daniels":"QB4","Zay Flowers":"WR21","Kenneth Walker III":"RB11","Kenneth Walker":"RB11","Joe Burrow":"QB5","Colston Loveland":"TE3","Rome Odunze":"WR22","DeVonta Smith":"WR23","Luther Burden III":"WR24","Luther Burden":"WR24","Chase Brown":"RB12","Brian Thomas Jr.":"WR25","Brian Thomas Jr":"WR25","Brian Thomas":"WR25","Marvin Harrison Jr.":"WR26","Marvin Harrison Jr":"WR26","Marvin Harrison":"WR26","Jameson Williams":"WR27","Bucky Irving":"RB13","Tyler Warren":"TE4","Jordyn Tyson":"WR28","Patrick Mahomes II":"QB6","Patrick Mahomes":"QB6","Jaylen Waddle":"WR29","Christian McCaffrey":"RB14","Tucker Kraft":"TE5","Harold Fannin Jr.":"TE6","Harold Fannin Jr":"TE6","Harold Fannin":"TE6","Justin Herbert":"QB7","Caleb Williams":"QB8","Jalen Hurts":"QB9","Saquon Barkley":"RB15","Quinshon Judkins":"RB16","Sam LaPorta":"TE7","Kyren Williams":"RB17","Kyle Pitts Sr.":"TE8","Kyle Pitts Sr":"TE8","Kyle Pitts":"TE8","Jaxson Dart":"QB10","Travis Etienne Jr.":"RB18","Travis Etienne Jr":"RB18","Travis Etienne":"RB18","Brock Purdy":"QB11","Josh Jacobs":"RB19","RJ Harvey":"RB20","Trevor Lawrence":"QB12","Bo Nix":"QB13","Jordan Addison":"WR30","Kenyon Sadiq":"TE9","Cam Skattebo":"RB21","Javonte Williams":"RB22","DK Metcalf":"WR31","Christian Watson":"WR32","Ricky Pearsall":"WR33","Oronde Gadsden II":"TE10","Oronde Gadsden":"TE10","Derrick Henry":"RB23","K.C. Concepcion":"WR34","Kevin Concepcion":"WR34","Terry McLaurin":"WR35","Xavier Worthy":"WR36","Denzel Boston":"WR37","Dalton Kincaid":"TE11","Jakobi Meyers":"WR38","Jordan Love":"QB14","Courtland Sutton":"WR39","Michael Pittman Jr.":"WR40","Michael Pittman Jr":"WR40","Michael Pittman":"WR40","D'Andre Swift":"RB24","Alec Pierce":"WR41","Davante Adams":"WR42","Michael Wilson":"WR43","Jayden Higgins":"WR44","Dak Prescott":"QB15","Wan'Dale Robinson":"WR45","DJ Moore":"WR46","Jake Ferguson":"TE12","Bhayshul Tuten":"RB25","Travis Hunter":"WR47","Quentin Johnston":"WR48","Zach Charbonnet":"RB26","Brenton Strange":"TE13","Jaylen Warren":"RB27","Baker Mayfield":"QB16","Kyle Monangai":"RB28","George Kittle":"TE14","Mike Evans":"WR49","Jayden Reed":"WR50","Khalil Shakir":"WR51","Chris Godwin Jr.":"WR52","Chris Godwin Jr":"WR52","Chris Godwin":"WR52","Brandon Aiyuk":"WR53","Josh Downs":"WR54","Parker Washington":"WR55","Jauan Jennings":"WR56","C.J. Stroud":"QB18","Jared Goff":"QB19","Matthew Golden":"WR57","Stefon Diggs":"WR58","Blake Corum":"RB29","Sam Darnold":"QB20","Isaiah Likely":"TE16","Mason Taylor":"TE17","Dallas Goedert":"TE18","David Montgomery":"RB30","Rico Dowdle":"RB31","Cam Ward":"QB21","Rhamondre Stevenson":"RB32","Chuba Hubbard":"RB33","Romeo Doubs":"WR59","Terrance Ferguson":"TE19","Kyler Murray":"QB22","Tyler Allgeier":"RB34","Tyler Shough":"QB23","Jalen Coker":"WR60","Woody Marks":"RB35","Rashid Shaheed":"WR61","Tre Harris":"WR62","Tre' Harris":"WR62","Deebo Samuel Sr.":"WR64","Deebo Samuel":"WR64","Troy Franklin":"WR65","Bryce Young":"QB24","Trey Benson":"RB36","Tyrone Tracy Jr.":"RB37","Tyrone Tracy":"RB37","Matthew Stafford":"QB25","Kayshon Boutte":"WR66","Juwan Johnson":"TE20","Jerry Jeudy":"WR67","AJ Barner":"TE21","Malik Willis":"QB27","Tony Pollard":"RB40","Jacory Croskey-Merritt":"RB41","Theo Johnson":"TE22","Jalen McMillan":"WR69","Kenneth Gainwell":"RB42","Mark Andrews":"TE23","T.J. Hockenson":"TE24","Tyreek Hill":"WR70","Hunter Henry":"TE25","Adonai Mitchell":"WR71","Elic Ayomanor":"WR72","J.K. Dobbins":"RB43","Michael Penix Jr.":"QB28","Michael Penix Jr":"QB28","Michael Penix":"QB28","J.J. McCarthy":"QB29","Pat Bryant":"WR74","Tyjae Spears":"RB46","Rachaad White":"RB47","Jordan Mason":"RB48","Dylan Sampson":"RB49","David Njoku":"TE26","Travis Kelce":"TE27","Kyle Williams":"WR77","Dalton Schultz":"TE28","Alvin Kamara":"RB50","Chimere Dike":"WR79","Keon Coleman":"WR80","Kaleb Johnson":"RB51","Elijah Arroyo":"TE30","Darnell Mooney":"WR82","Tua Tagovailoa":"QB31","Isaac TeSlaa":"WR83","Braelon Allen":"RB52","Isiah Pacheco":"RB54","Tank Bigsby":"RB55","Aaron Jones Sr.":"RB56","Aaron Jones":"RB56","Shedeur Sanders":"QB32","Nicholas Singleton":"RB57","Nick Singleton":"RB57","Cade Otton":"TE32","Devin Neal":"RB58","James Conner":"RB59","Brian Robinson Jr.":"RB60","Brian Robinson":"RB60","Kimani Vidal":"RB61","Cedric Tillman":"WR89","Pat Freiermuth":"TE33","Jack Bech":"WR90","Sean Tucker":"RB62","Tank Dell":"WR91","Ollie Gordon II":"RB63","Ollie Gordon":"RB63","Ray Davis":"RB64","Rashod Bateman":"WR92","Emanuel Wilson":"RB66","Christian Kirk":"WR94","Keaton Mitchell":"RB67","Calvin Ridley":"WR95","Tre Tucker":"WR96","Anthony Richardson Sr.":"QB33","Anthony Richardson":"QB33","Jaylen Wright":"RB68","Tez Johnson":"WR97","Dontayvion Wicks":"WR98","Cooper Kupp":"WR99","DeMario Douglas":"WR100","Demario Douglas":"WR100","Brashard Smith":"RB69","Gunnar Helm":"TE36","Xavier Legette":"WR101","DJ Giddens":"RB71","Najee Harris":"RB72","Justin Fields":"QB34","Evan Engram":"TE37","Malik Washington":"WR102","Geno Smith":"QB36","Chris Rodriguez Jr.":"RB73","Chris Rodriguez":"RB73","Jarquez Hunter":"RB74","Kendre Miller":"RB75","Darius Slayton":"WR104","Keenan Allen":"WR105","Isaiah Davis":"RB78","Devaughn Vele":"WR106","Isaiah Bond":"WR107","Jacoby Brissett":"QB39","Jalen Royals":"WR108","Mike Gesicki":"TE39","Ben Sinnott":"TE40","Ja'Tavion Sanders":"TE42","Will Shipley":"RB82","Isaac Guerendo":"RB83","Colby Parkinson":"TE43","Joshua Palmer":"WR109","Trevor Etienne":"RB84","Jonnu Smith":"TE45","Roman Wilson":"WR110","Jalen Milroe":"QB40","Ryan Flournoy":"WR111","Kareem Hunt":"RB85","Nick Chubb":"RB86","Jerome Ford":"RB87","Dont'e Thornton Jr.":"WR112","Dont'e Thornton":"WR112","Jaylin Lane":"WR114","Noah Gray":"TE46","Audric Estime":"RB88","Devin Singletary":"RB89","Brandon Aubrey":"K1","Justice Hill":"RB90","Jordan Whittington":"WR115","Andrei Iosivas":"WR117","Spencer Rattler":"QB45","Luke Musgrave":"TE48","Luke McCaffrey":"WR118","Dawson Knox":"TE49","Harrison Butker":"K3","Calvin Austin III":"WR119","Calvin Austin":"WR119","Tahj Brooks":"RB91","Cameron Dicker":"K4","MarShawn Lloyd":"RB92","Will Reichard":"K5","Wil Lutz":"K6","Jaleel McLaughlin":"RB93","Chris Boswell":"K7","KeAndre Lambert-Smith":"WR121","Savion Williams":"WR120","Russell Wilson":"QB48","Jalen Tolbert":"WR122","Evan McPherson":"K10","Jordan James":"RB95","Ka'imi Fairbairn":"K11","John Metchie III":"WR124","John Metchie":"WR124","Jaylin Noel":"WR68","Jaydon Blue":"RB79","Darren Waller":"TE53","DeAndre Hopkins":"WR125","Deandre Hopkins":"WR125","Jason Myers":"K17","Jake Bates":"K18","Elijah Moore":"WR135","Antonio Gibson":"RB99","Carson Beck":"QB53","Zach Ertz":"TE55","Adam Thielen":"WR161","Trey Lance":"QB52","Josh Palmer":"WR109","Roschon Johnson":"RB103","Taysom Hill":"TE56","Miles Sanders":"RB104","Raheim Sanders":"RB105","Michael Carter":"RB108","Austin Ekeler":"RB110","Emari Demercado":"RB112","Jimmy Horn Jr.":"WR148","Jimmy Horn":"WR148","Marquise Brown":"WR103","Diontae Johnson":"WR166","Davante Adams":"WR42","Ty Johnson":"RB102","Tyler Bass":"K16","Brandon McManus":"K15","Chub Hubbard":"RB33","Jahan Dotson":"WR153","Matt Prater":"K21","Will Dissly":"TE63","Zavier Scott":"RB126","Damien Martinez":"RB118","Tyler Conklin":"TE70","Demarcus Robinson":"WR152","Trey Palmer":"WR128","Gardner Minshew":"QB56","Elijah Mitchell":"RB127","Curtis Samuel":"WR164","Josh Oliver":"TE69","Cam Little":"K2","Jordan Whittington":"WR115","Javon Baker":"WR172","Zonovan Knight":"RB121","Deuce Vaughn":"RB131","Philadelphia Eagles":"DST1","Buffalo Bills":"DST2","Kansas City Chiefs":"DST3","San Francisco 49ers":"DST4","Detroit Lions":"DST5","Houston Texans":"DST6","Pittsburgh Steelers":"DST7","Baltimore Ravens":"DST8","Denver Broncos":"DST9","Tampa Bay Buccaneers":"DST10","Green Bay Packers":"DST11","Los Angeles Chargers":"DST12","Seattle Seahawks":"DST13","Los Angeles Rams":"DST14","Cincinnati Bengals":"DST15","New Orleans Saints":"DST16","Indianapolis Colts":"DST17","New England Patriots":"DST18","Jacksonville Jaguars":"DST19","New York Jets":"DST20","Dallas Cowboys":"DST21","Miami Dolphins":"DST22","Carolina Panthers":"DST23","Cleveland Browns":"DST24","Washington Commanders":"DST25"};
 
+        // ─────────────────────────────────────────────
+        //  Hydrate KTC/FP from localStorage cache on boot.
+        //  If the user previously refreshed values, use that snapshot so the site shows fresh data
+        //  even when the CORS proxy is down. Cache keys: dff_ktc_v1, dff_fp_v1.
+        // ─────────────────────────────────────────────
+        (function hydrateExternalsFromCache() {
+            try {
+                const rawKtc = localStorage.getItem('dff_ktc_v1');
+                if (rawKtc) {
+                    const { t, d } = JSON.parse(rawKtc) || {};
+                    const age = Date.now() - (t || 0);
+                    if (d && typeof d === 'object' && age >= 0) {
+                        Object.assign(ktcValues, d);
+                        if (age > (CONFIG.STALE_WARN_MS || 0)) {
+                            console.warn('[DynastyFF] KTC cache is ' + Math.round(age / 86400000) + 'd old — consider refreshing.');
+                            window.__dffCacheStale = true;
+                        }
+                    }
+                }
+                const rawFp = localStorage.getItem('dff_fp_v1');
+                if (rawFp) {
+                    const { t, d } = JSON.parse(rawFp) || {};
+                    const age = Date.now() - (t || 0);
+                    if (d && typeof d === 'object' && age >= 0) {
+                        Object.assign(fpRanks, d);
+                    }
+                }
+            } catch (e) {
+                console.warn('[DynastyFF] Cache hydration failed (corrupt localStorage?):', e);
+            }
+        })();
+
         // ========== TEAM ROSTERS DATA (Live from Sleeper API - 2026-03-19) ==========
         const teamRosters = {
 "nendy": {"starters":[{"n":"Josh Allen","p":"QB","t":"BUF"},{"n":"Saquon Barkley","p":"RB","t":"PHI"},{"n":"Kyren Williams","p":"RB","t":"LAR"},{"n":"Jaxon Smith-Njigba","p":"WR","t":"SEA"},{"n":"Puka Nacua","p":"WR","t":"LAR"},{"n":"Darren Waller","p":"TE","t":"FA"},{"n":"Amon-Ra St. Brown","p":"WR","t":"DET"},{"n":"Omarion Hampton","p":"RB","t":"LAC"},{"n":"Ka\'imi Fairbairn","p":"K","t":"HOU"},{"n":"Seattle Seahawks","p":"DEF","t":"SEA"}],"bench":[{"n":"Jaxson Dart","p":"QB","t":"NYG"},{"n":"Dont\'e Thornton","p":"WR","t":"LV"},{"n":"David Njoku","p":"TE","t":"FA"},{"n":"T.J. Hockenson","p":"TE","t":"MIN"},{"n":"Tony Pollard","p":"RB","t":"TEN"},{"n":"Colby Parkinson","p":"TE","t":"LAR"},{"n":"Romeo Doubs","p":"WR","t":"NE"},{"n":"Rashid Shaheed","p":"WR","t":"SEA"},{"n":"C.J. Stroud","p":"QB","t":"HOU"},{"n":"Houston Texans","p":"DEF","t":"HOU"}],"taxi":[{"n":"Jarquez Hunter","p":"RB","t":"LAR"},{"n":"Isaiah Davis","p":"RB","t":"NYJ"},{"n":"Ben Sinnott","p":"TE","t":"WAS"},{"n":"DJ Giddens","p":"RB","t":"IND"}],"posCounts":{"QB":3,"RB":7,"WR":6,"TE":5,"K":1,"DEF":2},"avgAge":"26.1"},
@@ -5591,7 +5791,7 @@
             // Uses avg weekly PF per season to estimate weekly performance,
             // then counts how many of the other 11 managers scored less.
             const owners = Object.keys(allTimeData);
-            const seasons = ['2023','2024','2025'];
+            const seasons = CONFIG.SEASONS;
             // Build per-season avg weekly scores for each owner
             const seasonAvgs = {};
             seasons.forEach(yr => {
@@ -5727,8 +5927,30 @@
             status.style.color = 'var(--accent-teal)';
             status.textContent = 'Fetching latest KTC values...';
 
-            // Route through CORS proxy so this works when opened as a local file
-            const PROXY = 'https://corsproxy.io/?';
+            // Route through CORS proxies so this works when opened as a local file.
+            // Uses the fallback list — tries each proxy in order until one succeeds.
+            // Different proxies accept different target-URL formats, so we encodeURIComponent for compatibility
+            // (corsproxy.io accepts both; allorigins requires encoding; codetabs accepts both).
+            // If every proxy fails we return an empty 599 Response and downstream parsing becomes a no-op.
+            const PROXIES = (Array.isArray(CONFIG.CORS_PROXY_FALLBACKS) && CONFIG.CORS_PROXY_FALLBACKS.length)
+                ? CONFIG.CORS_PROXY_FALLBACKS
+                : [CONFIG.CORS_PROXY];
+
+            async function proxyFetch(targetUrl) {
+                let lastErr = null;
+                for (const p of PROXIES) {
+                    try {
+                        const proxied = p + encodeURIComponent(targetUrl);
+                        const r = await fetch(proxied);
+                        if (r.ok) return r;
+                        lastErr = 'HTTP ' + r.status + ' via ' + p;
+                    } catch (e) {
+                        lastErr = (e && e.message) || String(e);
+                    }
+                }
+                console.warn('[DynastyFF] all CORS proxies failed for', targetUrl, '-', lastErr);
+                return new Response('', { status: 599, statusText: 'All proxies failed' });
+            }
 
             // Parse a FantasyPros rankings table and populate fpRanks.
             // posLabel ('K', 'DST') is used to generate a rank string when the
@@ -5771,8 +5993,8 @@
             }
 
             try {
-                // 1. Fetch KTC dynasty rankings page
-                const ktcRes = await fetch(PROXY + 'https://keeptradecut.com/dynasty-rankings?format=2');
+                // 1. Fetch KTC dynasty rankings page (tries each proxy in fallback list)
+                const ktcRes = await proxyFetch('https://keeptradecut.com/dynasty-rankings?format=2');
                 const ktcHtml = await ktcRes.text();
                 const ktcMatch = ktcHtml.match(/var\s+playersArray\s*=\s*(\[[\s\S]*?\]);/);
                 if (ktcMatch) {
@@ -5791,7 +6013,8 @@
 
                 // 2. Fetch FantasyPros — overall + K + DST in parallel.
                 //    Dynasty-specific K/DST pages may not exist; fall back to redraft pages.
-                const safeFetch = url => fetch(PROXY + url).catch(() => new Response(''));
+                //    `safeFetch` uses the proxy fallback list and swallows rejection to an empty Response.
+                const safeFetch = url => proxyFetch(url).catch(() => new Response(''));
 
                 // 2a. Fetch KTC Kicker + DST rankings (separate endpoints)
                 try {
@@ -5870,6 +6093,15 @@
                 // 3. Re-render rosters with new data
                 initRosters();
 
+                // 4. Persist latest snapshot to localStorage so the next page load starts with fresh data
+                //    even when proxies are down. Cache keys: dff_ktc_v1, dff_fp_v1.
+                try {
+                    localStorage.setItem('dff_ktc_v1', JSON.stringify({ t: Date.now(), d: ktcValues }));
+                    localStorage.setItem('dff_fp_v1',  JSON.stringify({ t: Date.now(), d: fpRanks }));
+                } catch (e) {
+                    console.warn('[DynastyFF] Could not persist values to localStorage:', e);
+                }
+
                 const now = new Date().toLocaleString();
                 status.style.background = 'rgba(0,212,170,0.15)';
                 status.textContent = 'Values refreshed! KTC + FP (incl. K/DST) updated as of ' + now;
@@ -5927,17 +6159,17 @@
 
             try {
                 // 1. Look up user "nendy" to discover the league
-                const userRes = await fetch(`${SLEEPER}/user/nendy`);
-                if (!userRes.ok) throw new Error('Could not find Sleeper user');
+                const userRes = await fetch(`${SLEEPER}/user/${CONFIG.SLEEPER_USERNAME}`);
+                if (!userRes.ok) throw new Error('Could not find Sleeper user "' + CONFIG.SLEEPER_USERNAME + '"');
                 const userData = await userRes.json();
                 const userId = userData.user_id;
 
                 // 2. Find the 12-team dynasty league from the most recent season
                 status.textContent = 'Finding dynasty league...';
-                const leaguesRes = await fetch(`${SLEEPER}/user/${userId}/leagues/nfl/2025`);
+                const leaguesRes = await fetch(`${SLEEPER}/user/${userId}/leagues/nfl/${CONFIG.CURRENT_SEASON}`);
                 const leagues = await leaguesRes.json();
-                const dynasty = leagues.find(l => l.total_rosters === 12 && l.settings?.type === 2);
-                if (!dynasty) throw new Error('Could not identify 12-team dynasty league');
+                const dynasty = leagues.find(l => l.total_rosters === CONFIG.TOTAL_TEAMS && l.settings?.type === 2);
+                if (!dynasty) throw new Error('Could not identify ' + CONFIG.TOTAL_TEAMS + '-team dynasty league for ' + CONFIG.CURRENT_SEASON);
 
                 // 3. Chain back through seasons using previous_league_id
                 const leagueChain = [{ season: dynasty.season, id: dynasty.league_id, settings: dynasty.settings }];
@@ -6281,17 +6513,6 @@
         function getPlayerKTCRank(name) { return ktcData[name]?.[1] || ktcData[normalizeName(name)]?.[1] || '-'; }
         function getPlayerFPRank(name) { return fpData[name] || fpData[normalizeName(name)] || '-'; }
 
-        // Grade calculation functions
-        function getGrade(score, pickNum, totalPicks, isRookie) {
-            if (isRookie) {
-                // Rookie grading: KTC 40%, FP 30%, Production 30%
-                return score;
-            } else {
-                // Startup grading: Production vs expected value
-                return score;
-            }
-        }
-
         // 2023 SF dynasty rankings for startup grading (approximate consensus at draft time)
         const startup2023Ranks = {
             "Patrick Mahomes":1,"Josh Allen":2,"Justin Jefferson":3,"Ja'Marr Chase":4,"Jalen Hurts":5,
@@ -6395,7 +6616,7 @@
                 if (pct <= 0.5) return 'C-';
                 return 'D+';
             }
-            const expectedRank = Math.max(10, (overallPickNum / totalPicks) * 300);
+            const expectedRank = Math.max(10, (overallPickNum / totalPicks) * CONFIG.DRAFT_GRADE.STARTUP_RANK_SPAN);
             const ratio = effectiveRank / expectedRank;
             if (ratio <= 0.35) return 'A+';
             if (ratio <= 0.55) return 'A';
@@ -6427,23 +6648,23 @@
                 return 'D+';
             }
             // Scale: KTC ranks span ~1-400; map pick position to that range
-            const expectedRank = Math.max(1, (overallPickNum / totalPicks) * 350);
+            const expectedRank = Math.max(1, (overallPickNum / totalPicks) * CONFIG.DRAFT_GRADE.KTC_RANK_SPAN);
             let ratio = ktcRank / expectedRank;
             // ratio < 1: player ranks better than expected (value)
             // ratio > 1: player ranks worse than expected (reach)
 
             // Late-round deflation: rounds 3-4 expectedRank is generous, so
             // bump ratio to keep grades realistic for dart-throw picks
-            const round = Math.ceil(overallPickNum / 12);
+            const round = Math.ceil(overallPickNum / CONFIG.TOTAL_TEAMS);
             if (round === 3) {
-                ratio *= 1.12;
+                ratio *= CONFIG.DRAFT_GRADE.ROUND3_MULTIPLIER;
             } else if (round >= 4) {
-                ratio *= 1.22;
+                ratio *= CONFIG.DRAFT_GRADE.ROUND4_MULTIPLIER;
             }
 
             // Additional TE penalty: TEs in round 3+ rarely hit dynasty value
             if (position === 'TE' && round >= 3) {
-                ratio *= 1.35;
+                ratio *= CONFIG.DRAFT_GRADE.TE_LATE_PENALTY;
             }
 
             if (ratio <= 0.4)  return 'A+';
@@ -6469,7 +6690,7 @@
             const gridContainer = document.getElementById(`db-${draftType}-grid`);
             gridContainer.innerHTML = '';
 
-            const slots = [1,2,3,4,5,6,7,8,9,10,11,12];
+            const slots = Array.from({length: CONFIG.TOTAL_TEAMS}, (_, i) => i + 1);
 
             // Slot → owner name (stable across all rounds)
             const slotOwnerMap = {};
@@ -6766,7 +6987,7 @@
         //  ENHANCED SEASON RECAPS — Inject stats
         // ═══════════════════════════════════════════
         function injectRecapStats() {
-            const years = ['2023','2024','2025'];
+            const years = CONFIG.SEASONS;
             years.forEach(yr => {
                 const card = document.getElementById('recap-' + yr);
                 if (!card || card.querySelector('.recap-stats-bar')) return;
@@ -7031,8 +7252,9 @@
         let previousTab = 'overview';
 
         function openTeamProfile(owner) {
+            if (!owner || typeof owner !== 'string') return;
             const data = allTimeData[owner];
-            if (!data) return;
+            if (!data) { console.warn('[DynastyFF] No data for owner:', owner); return; }
 
             // Remember current tab so back button returns there
             const currentActive = document.querySelector('.tab-content.active');
@@ -7062,7 +7284,7 @@
             if (owner === 'doyersbeast') honors.push('💥 All-Time Blowout (119.8)');
 
             // Build season cards
-            const seasonCards = ['2023','2024','2025'].map(yr => {
+            const seasonCards = CONFIG.SEASONS.map(yr => {
                 const s = data.seasons[yr];
                 if (!s) return '';
                 const finish = (championshipResults[owner] || {})[yr] || '';
@@ -7101,7 +7323,7 @@
 
             // Build waiver activity
             const ws = transactionData.waiverStats[owner];
-            const waiverHtml = ws ? ['2023','2024','2025'].map(yr => {
+            const waiverHtml = ws ? CONFIG.SEASONS.map(yr => {
                 const byYr = ws.byYear[yr] || { w: 0, fa: 0 };
                 return `<div class="tp-waiver-card">
                     <div class="wv-year">${yr}</div>
@@ -7214,7 +7436,7 @@
             if (tpChartInst) { tpChartInst.destroy(); tpChartInst = null; }
             const trendCtx = document.getElementById('tpTrendChart');
             if (trendCtx) {
-                const trendSeasons = ['2023','2024','2025'];
+                const trendSeasons = CONFIG.SEASONS;
                 const trendLabels = [];
                 const trendPF = [];
                 const trendMaxPF = [];
@@ -7299,18 +7521,18 @@
             const owners = Object.keys(allTimeData);
             const datasets = owners.map((owner, i) => {
                 const d = allTimeData[owner];
-                const s25 = d.seasons['2025'];
-                const winPct = s25 ? parseFloat((s25.wins / (s25.wins + s25.losses) * 100).toFixed(1)) : 0;
-                const ppts2025 = s25 ? parseFloat(s25.ppts) : 0;
+                const sLatest = d.seasons[String(CONFIG.CURRENT_SEASON)];
+                const winPct = sLatest ? parseFloat((sLatest.wins / (sLatest.wins + sLatest.losses) * 100).toFixed(1)) : 0;
+                const pptsLatest = sLatest ? parseFloat(sLatest.ppts) : 0;
                 return {
                     label: owner,
-                    data: [{ x: ppts2025, y: winPct }],
+                    data: [{ x: pptsLatest, y: winPct }],
                     backgroundColor: palette[i % palette.length] + 'bb',
                     borderColor: palette[i % palette.length],
                     borderWidth: 2, pointRadius: 11, pointHoverRadius: 14,
                 };
             });
-            const allPpts = owners.map(o => { const s = allTimeData[o].seasons['2025']; return s ? parseFloat(s.ppts) : 0; });
+            const allPpts = owners.map(o => { const s = allTimeData[o].seasons[String(CONFIG.CURRENT_SEASON)]; return s ? parseFloat(s.ppts) : 0; });
             const sortedPpts = [...allPpts].sort((a, b) => a - b);
             const midPpts = sortedPpts.length % 2 === 0 ? (sortedPpts[sortedPpts.length/2 - 1] + sortedPpts[sortedPpts.length/2]) / 2 : sortedPpts[Math.floor(sortedPpts.length/2)];
             contenderChartInst = new Chart(ctx, {
@@ -7341,12 +7563,12 @@
                         legend: { display: false },
                         tooltip: { callbacks: { label(ctx) {
                             const o = ctx.dataset.label, d = allTimeData[o];
-                            return [o + ' — ' + d.team_name, '2025 Win %: ' + ctx.parsed.y + '%', '2025 Max PF: ' + ctx.parsed.x.toFixed(0)];
+                            return [o + ' — ' + d.team_name, CONFIG.CURRENT_SEASON + ' Win %: ' + ctx.parsed.y + '%', CONFIG.CURRENT_SEASON + ' Max PF: ' + ctx.parsed.x.toFixed(0)];
                         }}}
                     },
                     scales: {
-                        x: { title: { display: true, text: 'Roster Talent — 2025 Max PF', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 } } },
-                        y: { title: { display: true, text: '2025 Season Win %', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 }, callback: v => v + '%' }, min: 0, max: 100 }
+                        x: { title: { display: true, text: 'Roster Talent — ' + CONFIG.CURRENT_SEASON + ' Max PF', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 } } },
+                        y: { title: { display: true, text: CONFIG.CURRENT_SEASON + ' Season Win %', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 }, callback: v => v + '%' }, min: 0, max: 100 }
                     },
                     onClick(e, els) {
                         if (els.length) openTeamProfile(contenderChartInst.data.datasets[els[0].datasetIndex].label);
@@ -7359,76 +7581,46 @@
         //  GLOBAL MANAGER LINK WIRING
         //  Makes all owner names clickable site-wide
         // ═══════════════════════════════════════════
+        // ═══════════════════════════════════════════
+        //  GLOBAL MANAGER LINK WIRING (DRY)
+        // ═══════════════════════════════════════════
         const allOwnerNames = Object.keys(allTimeData);
+
+        // Wire a single element as a clickable manager link
+        function wireOneManagerLink(el, ownerName) {
+            if (el.classList.contains('manager-link')) return;
+            el.classList.add('manager-link');
+            el.style.cursor = 'pointer';
+            el.title = 'View ' + ownerName + "'s profile";
+            el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(ownerName); });
+        }
+
+        // Wire data-owner attributes
         function wireManagerLinks(root) {
             if (!root) return;
-            // Wire elements with data-owner attribute
-            root.querySelectorAll('[data-owner]').forEach(el => {
-                if (el.classList.contains('manager-link')) return;
-                el.classList.add('manager-link');
-                el.style.cursor = 'pointer';
-                el.title = 'View ' + el.dataset.owner + "'s profile";
-                el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(el.dataset.owner); });
-            });
+            root.querySelectorAll('[data-owner]').forEach(el => wireOneManagerLink(el, el.dataset.owner));
         }
+
+        // Selectors whose textContent is an owner name (possibly with prefixes to strip)
+        const MANAGER_LINK_SELECTORS = [
+            '.h2h-header-cell', '.h2h-label', '.roster-owner-name',
+            '.trade-team-name', '.pr-owner', '.dc-owner-name'
+        ];
+        const MANAGER_LINK_SELECTOR_STR = MANAGER_LINK_SELECTORS.join(',');
 
         // Observe the main content area for dynamically generated owner names
         const mainEl = document.querySelector('main');
         if (mainEl) {
             const globalObserver = new MutationObserver(() => {
-                // Wire H2H grid owner names
-                document.querySelectorAll('.h2h-header-cell, .h2h-label').forEach(el => {
+                // Standard selectors: textContent === ownerName
+                document.querySelectorAll(MANAGER_LINK_SELECTOR_STR).forEach(el => {
                     const name = el.textContent.trim();
-                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
-                        el.classList.add('manager-link');
-                        el.title = 'View ' + name + "'s profile";
-                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
-                    }
+                    if (allOwnerNames.includes(name)) wireOneManagerLink(el, name);
                 });
-                // Wire roster card owner names
-                document.querySelectorAll('.roster-owner-name').forEach(el => {
-                    const name = el.textContent.trim();
-                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
-                        el.classList.add('manager-link');
-                        el.title = 'View ' + name + "'s profile";
-                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
-                    }
-                });
-                // Wire transaction trade partner names
-                document.querySelectorAll('.trade-team-name').forEach(el => {
-                    const name = el.textContent.trim();
-                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
-                        el.classList.add('manager-link');
-                        el.title = 'View ' + name + "'s profile";
-                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
-                    }
-                });
-                // Wire playoff bracket team names
+                // Playoff bracket names need prefix/suffix stripping
                 document.querySelectorAll('.pm-team span').forEach(el => {
                     const rawName = el.textContent.trim().replace(/^🏆\s*/, '').replace(/\s*\(\d+\)$/, '');
-                    if (allOwnerNames.includes(rawName) && !el.classList.contains('manager-link')) {
-                        el.classList.add('manager-link');
-                        el.title = 'View ' + rawName + "'s profile";
-                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(rawName); });
-                    }
-                });
-                // Wire power rankings names
-                document.querySelectorAll('.pr-owner').forEach(el => {
-                    const name = el.textContent.trim();
-                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
-                        el.classList.add('manager-link');
-                        el.title = 'View ' + name + "'s profile";
-                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
-                    }
-                });
-                // Wire draft capital card names
-                document.querySelectorAll('.dc-owner-name').forEach(el => {
-                    const name = el.textContent.trim();
-                    if (allOwnerNames.includes(name) && !el.classList.contains('manager-link')) {
-                        el.classList.add('manager-link');
-                        el.title = 'View ' + name + "'s profile";
-                        el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(name); });
-                    }
+                    if (allOwnerNames.includes(rawName)) wireOneManagerLink(el, rawName);
                 });
             });
             globalObserver.observe(mainEl, { childList: true, subtree: true });

@@ -1,0 +1,82 @@
+{
+  "ktcValues": {
+    "Ja'Marr Chase": [9993, 2],
+    "Bijan Robinson": [9998, 1],
+    "CeeDee Lamb": [7889, 12],
+    "Puka Nacua": [9648, 5],
+    "Breece Hall": [6289, 32],
+    "George Pickens": [6776, 23],
+    "D.J. Moore": [4892, 81],
+    "DJ Moore": [4892, 81],
+    "Saquon Barkley": [5615, 52],
+    "Jalen Hurts": [5451, 69],
+    "Kyle Pitts": [5193, 76],
+    "Dalton Kincaid": [4078, 123],
+    "2026 Early 1st": [6526, 28],
+    "2026 Mid 1st": [5503, 64],
+    "2026 Late 1st": [5032, 79],
+    "2027 Early 1st": [7072, 19],
+    "2027 Mid 1st": [5890, 42],
+    "2027 Late 1st": [5506, 63],
+    "2028 Early 1st": [5610, 54],
+    "2028 Mid 1st": [5208, 75],
+    "2028 Late 1st": [4771, 85],
+    "2026 Early 2nd": [4290, 112],
+    "2026 Mid 2nd": [3829, 138],
+    "2026 Late 2nd": [3584, 154]
+  },
+  "ktcData": {
+    "Ja'Marr Chase": [9993, 2],
+    "Bijan Robinson": [9998, 1],
+    "CeeDee Lamb": [7889, 12],
+    "Puka Nacua": [9648, 5],
+    "Breece Hall": [6289, 32],
+    "George Pickens": [6776, 23],
+    "D.J. Moore": [4892, 81],
+    "Saquon Barkley": [5615, 52],
+    "Jalen Hurts": [5451, 69],
+    "Kyle Pitts": [5193, 76]
+  },
+  "fpRanks": {
+    "Ja'Marr Chase": "WR1",
+    "Bijan Robinson": "RB1",
+    "CeeDee Lamb": "WR4"
+  },
+  "fpData": {},
+  "ktcPickValues": {
+    "Early 1st":  { "2024": 6800, "2025": 6800, "2026": 6800, "2027": 6800, "2028": 6800 },
+    "Mid 1st":    { "2024": 5400, "2025": 5400, "2026": 5400, "2027": 5400, "2028": 5400 },
+    "Late 1st":   { "2024": 4800, "2025": 4800, "2026": 4800, "2027": 4800, "2028": 4800 },
+    "Early 2nd":  { "2024": 4000, "2025": 4000, "2026": 4000, "2027": 4000, "2028": 4000 },
+    "Mid 2nd":    { "2024": 3500, "2025": 3500, "2026": 3500, "2027": 3500, "2028": 3500 },
+    "Late 2nd":   { "2024": 3200, "2025": 3200, "2026": 3200, "2027": 3200, "2028": 3200 },
+    "Early 3rd":  { "2024": 2600, "2025": 2600, "2026": 2600, "2027": 2600, "2028": 2600 },
+    "Mid 3rd":    { "2024": 2400, "2025": 2400, "2026": 2400, "2027": 2400, "2028": 2400 },
+    "Late 3rd":   { "2024": 2200, "2025": 2200, "2026": 2200, "2027": 2200, "2028": 2200 },
+    "Early 4th":  { "2024": 2000, "2025": 2000, "2026": 2000, "2027": 2000, "2028": 2000 },
+    "Mid 4th":    { "2024": 1800, "2025": 1800, "2026": 1800, "2027": 1800, "2028": 1800 },
+    "Late 4th":   { "2024": 1600, "2025": 1600, "2026": 1600, "2027": 1600, "2028": 1600 }
+  },
+  "pickProjection2026": {
+    "nendy":       { "tier": "Mid",   "pick": 7  },
+    "shaqdeezy":   { "tier": "Late",  "pick": 10 },
+    "MrEton":      { "tier": "Early", "pick": 3  },
+    "andrewmcorral":{"tier": "Mid",   "pick": 6  },
+    "doyersbeast": { "tier": "Late",  "pick": 11 },
+    "nsbarbarino": { "tier": "Early", "pick": 2  },
+    "SweetSweet":  { "tier": "Mid",   "pick": 8  },
+    "grffnboss":   { "tier": "Late",  "pick": 12 },
+    "jakeschwartz":{ "tier": "Early", "pick": 1  },
+    "JustinG66":   { "tier": "Mid",   "pick": 5  },
+    "DeezNutz02":  { "tier": "Late",  "pick": 9  },
+    "bradysballzfdf":{"tier":"Early", "pick": 4  }
+  },
+  "transactionData": {
+    "trades": [
+      ["2024-09-10", "seasonal", 1725926400000, {
+        "nendy":      { "got": ["George Pickens"], "gave": ["2026 R1"] },
+        "shaqdeezy":  { "got": ["2026 R1"],       "gave": ["George Pickens"] }
+      }]
+    ]
+  }
+}
