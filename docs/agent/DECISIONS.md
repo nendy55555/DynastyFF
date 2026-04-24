@@ -148,6 +148,40 @@ CORS_PROXY_FALLBACKS: [
 
 **When to revisit:** If we add a "regular season only" toggle to the H2H view, both sources would be needed.
 
+**Superseded:** Same day, by the canonical-record decision below — every tab now uses `getRecord()`.
+
+---
+
+## 2026-04-24 — Canonical record logic across the entire site
+
+**Decision:** Add a single source of truth `getRecord(owner, season)` defined alongside `computePlayoffBuckets()` / `getPlayoffBuckets()` / `getH2HAdjusted()`. Every tab that displays a record now reads from it. Record = regular season + *meaningful* playoffs (where "meaningful" means both teams entered the game still championship-eligible).
+
+**Why:**
+- Three different definitions of "record" were live across the site (regular-season-only in Standings, regular + all playoffs in H2H, ambiguous in Team Profile). Users couldn't reconcile them.
+- The user explicitly wanted consolation games out: "the 3rd place game or the people knocked out in the first round games after getting kncoked out shouldnt count"
+- Walking `bracketData` and tracking an `alive` set per year is a clean implementation: each game where both participants are still alive counts; a loss removes you from `alive` and any subsequent appearance is consolation.
+
+**How it works:**
+- `computePlayoffBuckets()` returns `{ meaningful, consolationPairs }`. Meaningful is the per-owner W/L. consolationPairs is a per-pair adjustment we subtract from `h2hData` cells so the matrix excludes 3rd-place / 5th-place games.
+- `getRecord(owner, season)` returns `{ reg, po, total, winPct, tooltip }` where `tooltip` is the hover string. Every record cell on the site now uses this.
+- A `.record-cell` CSS class adds a subtle dotted underline + `cursor: help` so users know they can hover.
+
+**Tradeoff:** H2H cells still show data from `h2hData`, which historically includes bottom-bracket consolation games we don't have in `bracketData`. So row sum can exceed Record column for teams with consolation history. Documented in the H2H subtitle. The clean fix needs bottom-bracket game data we don't have today.
+
+**When to revisit:** If we ingest bottom-bracket consolation game results, update `consolationPairs` to subtract them too — then row sum will exactly equal Record column for everyone.
+
+---
+
+## 2026-04-24 — Trades show drafted player next to used picks
+
+**Decision:** Trade cards now display `2025 3.05 → Jaxson Dart` for any pick that's already been used in a draft. Backed by `getPickedPlayer(asset)` and a one-shot index `buildPickedPlayerIndex()` that walks `draftData.startup2023 / rookie2024 / rookie2025`.
+
+**Why:**
+- A bare pick label like "2024 1.12" is meaningless after the draft happens. Showing the player taken makes historical trades comprehensible at a glance.
+- The data is already in the file — no fetch, no extra deps.
+
+**Implementation note:** Keyed by `${year}|${round}.${posInRound}` with `parseInt` on both sides, so the trade-asset format `"2024 3.02"` (zero-padded) and the draftData `position_in_round: 2` resolve the same way. Verified 22/22 traded picks in the dataset resolve correctly.
+
 ---
 
 ## 2026-04-20 — Did NOT add: Chart.js self-hosted copy

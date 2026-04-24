@@ -5,42 +5,48 @@
 
 ## Completed This Session
 
-1. **H2H Record column bug fix** — The Record column on the Head-to-Head tab was pulling from `allTimeData` (regular season only) while matrix cells pulled from `h2hData` (reg season + playoffs), so the Record didn't equal the sum of the row. Fixed `generateH2HGrid()` to compute totals from `h2hData` for both the Record column and the sort order. Subtitle text updated. Decision logged in DECISIONS.md.
+1. **Canonical record logic site-wide** — Built `getRecord(owner, season)` as the single source of truth. Record = regular season + *meaningful* playoff games (where "meaningful" means both teams were still championship-eligible going in; 3rd-place and consolation games are excluded). Backed by `computePlayoffBuckets()` which walks `bracketData` and tracks alive/eliminated state.
 
-## Previously Completed
+2. **Tooltips everywhere a record renders** — Hover any record cell to see the regular-season vs meaningful-playoff split (e.g., `Regular Season: 30-12 | Meaningful Playoffs: 4-2`). Implemented via a shared `.record-cell` class with subtle dotted underline and `cursor: help`.
 
-1. **CONFIG block extraction** — Created `CONFIG` object at top of JS with 25+ extracted constants (current year, team count, Sleeper username, CORS proxy, pick valuation tuning, trade grading coefficients, draft grading multipliers). All references updated.
+3. **Applied uniformly across every tab:**
+   - Standings (overlay onto `getSeasonDisplayData`, both all-time and per-season)
+   - Head-to-Head matrix (Record column = canonical, cells use `getH2HAdjusted` to subtract known consolation games, sort by canonical wins)
+   - Head-to-Head detail page (Overall record card, per-opponent breakdowns)
+   - Team Profile (hero stats, Career Stats card, season-by-season cards, H2H breakdown)
+   - Season Recap standings tables
+   - Draft Capital cards ("X-Y career" line)
+   - Column header tooltips updated to reflect new definition
 
-2. **Hardcoded year fix** — Replaced all hardcoded `2025` in JS logic with `CONFIG.CURRENT_SEASON`. Season lists (`['2023','2024','2025']`) now use `CONFIG.SEASONS` getter. Sleeper API calls, contender chart, tooltip labels all dynamically reference current season.
+4. **Trade picks resolve to drafted player** — Trades section now shows the player taken with each used pick: e.g., `2025 3.05 → Jaxson Dart`. Backed by `getPickedPlayer(asset)` which walks `draftData.startup2023/rookie2024/rookie2025` and returns the player taken at that round.position. Verified 22/22 traded picks resolve correctly.
 
-3. **Data validation layer** — Added startup integrity check that validates owner count, season completeness, wins/losses types, fpts ranges, and aggregate total consistency. Added guards to `getSeasonDisplayData`, `gradeTrade`, `getAssetKTC`, `openTeamProfile`. Improved error messages in Sleeper fetch.
+## Previously Completed (earlier sessions)
 
-4. **DRY manager-link wiring** — Consolidated 6 identical copy-paste blocks (~60 lines) into `wireOneManagerLink()` + configurable `MANAGER_LINK_SELECTORS` array (~20 lines). Playoff bracket special-case preserved.
-
-5. **Dynamic overview stats** — Replaced 4 hardcoded stat cards with 6 dynamically computed cards: Total Games, Highest Single Week, Longest Win Streak, Biggest Blowout, Total Trades, Most Active Trader. All read from `allTimeData`, `recordsData`, `streakData`, `transactionData`.
-
-6. **README update** — Added CONFIG section, updated data source docs, added architecture notes.
+1. H2H Record column bug fix (matrix vs allTimeData mismatch) — superseded by canonical logic above
+2. CONFIG block extraction (25+ constants), hardcoded year fix, data validation layer, DRY manager-link wiring, dynamic overview stats
+3. Test harness via `tests/extract.mjs` brace-counting, 30 tests covering grading + KTC + tier logic
+4. Chart.js SRI pin, CORS proxy fallback chain, localStorage hydration for KTC/FP, dismissible validation banner
 
 ## In-Flight
 None.
 
 ## Unresolved / Known Issues
-- Some HTML content strings still reference specific years (season recaps, narratives) — these are editorial content, not logic bugs
-- The `championshipResults` object is referenced in `openTeamProfile` but not shown in initial code scan — appears to be defined elsewhere in the file
-- `pickProjection2026` name is hardcoded to 2026 — acceptable since it's data-specific, not a rolling calculation
+- H2H matrix row sum can exceed the Record column for non-playoff teams when they have bottom-bracket consolation games that aren't tracked in `bracketData`. Documented in the H2H subtitle.
+- Some HTML content strings still reference specific years (season recaps, narratives) — editorial content, not logic.
+- `pickProjection2026` is data-specific, hardcoded to 2026 — acceptable.
 
 ## Files Changed
-- `index.html` — all changes (CONFIG block, validation, DRY refactor, dynamic stats)
-- `README.md` — updated with CONFIG docs and architecture
-- `docs/agent/SESSION-STATE.md` — created (this file)
+- `index.html` — canonical record module, getH2HAdjusted, getPickedPlayer, applied across 7 tabs, CSS for record-cell + trade-asset-picked
+- `docs/agent/SESSION-STATE.md` — this file
+- `docs/agent/DECISIONS.md` — to be updated with this session's decisions
 
 ## Key Decisions
-- Kept everything in single file per existing architecture — no build step, no module split
-- CONFIG uses a getter for SEASONS to auto-derive from start/current year
-- Trade grade thresholds stored as array of `{min, grade, color}` for extensibility
-- Data validation runs as IIFE on page load, logs warnings to console (non-blocking)
+- Single source of truth: `getRecord(owner, season)` — every tab calls it
+- Cache via `getPlayoffBuckets()` — computed once on first call, reused
+- Cells in H2H grid use `getH2HAdjusted` (subtracts known top-6 consolation); cells aren't expected to perfectly sum to Record column (subtitle explains)
+- Picked-player lookup keyed by `${year}|${round}.${posInRound}` with `parseInt` so "3.02" and "3.2" both resolve
 
 ## Next Session Start
-- Review the live site for any visual regressions from the dynamic stats change
-- Consider splitting CSS/JS into separate files if the file grows further
-- Add a "last updated" timestamp to the footer, derived from data
+- Visual QA on the live site after push (Standings, H2H, Team Profile, Trades all render hover tooltips correctly)
+- Consider adding bottom-bracket data to `bracketData` so H2H row sum can match Record column exactly
+- If users want a "regular-season-only" toggle on H2H, both data sources are now available

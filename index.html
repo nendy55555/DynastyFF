@@ -677,6 +677,16 @@
             border-radius: 4px;
         }
 
+        /* Canonical record cells — subtle hover cue so users know there's a tooltip */
+        .record-cell {
+            cursor: help;
+            text-decoration: underline dotted rgba(255, 255, 255, 0.28);
+            text-underline-offset: 3px;
+        }
+        .record-cell:hover {
+            text-decoration-color: var(--accent, #3b82f6);
+        }
+
         .h2h-data-cell {
             background: var(--bg-tertiary);
             border-radius: 3px;
@@ -2537,6 +2547,14 @@
             border-radius: 4px;
         }
 
+        .trade-asset-picked {
+            color: var(--accent-teal);
+            font-size: 0.78rem;
+            font-weight: 500;
+            opacity: 0.85;
+            margin-left: 0.15rem;
+        }
+
         .trade-asset.player {
             color: var(--accent-gold);
         }
@@ -3275,7 +3293,7 @@
         <div id="h2h" class="tab-content">
             <h2 class="section-header">Head-to-Head Lifetime Record</h2>
             <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
-                Record column = sum of each row (regular season + playoffs). Green: winning record | Red: losing record | Gold: .500 record
+                Record column = regular season + meaningful playoffs (3rd-place &amp; consolation excluded — same logic as every other tab). Hover for the season/playoff split. Cells show every meeting between the two teams; on rare occasions the row sum can exceed the Record column when bottom-bracket consolation matchups exist that aren&#39;t in our playoff bracket data. Green: winning | Red: losing | Gold: .500
             </p>
 
             <div class="h2h-container">
@@ -4312,28 +4330,46 @@
         let currentSortDir = 'desc';
         let currentStandingsSeason = 'all';
 
-        // Build per-season display data from allTimeData seasons
+        // Build per-season display data from allTimeData seasons.
+        // Uses canonical getRecord() so wins/losses include meaningful playoffs.
         function getSeasonDisplayData(owner, season) {
             const raw = allTimeData[owner];
             if (!raw) { console.warn('[DynastyFF] Unknown owner in standings:', owner); return null; }
-            if (season === 'all') return raw;
+            const rec = getRecord(owner, season);
+            if (season === 'all') {
+                // All-time: overlay canonical W/L/Win%, keep other all-time aggregates
+                return Object.assign({}, raw, {
+                    total_wins: rec.total.w,
+                    total_losses: rec.total.l,
+                    win_pct: rec.winPct.toFixed(1),
+                    record_tooltip: rec.tooltip,
+                    reg_wins: rec.reg.w,
+                    reg_losses: rec.reg.l,
+                    po_wins: rec.po.w,
+                    po_losses: rec.po.l
+                });
+            }
             const s = raw.seasons?.[season];
             if (!s) return null;
-            const totalGames = s.wins + s.losses;
-            const winPct = totalGames > 0 ? ((s.wins / totalGames) * 100).toFixed(1) : '0.0';
             const mgrEff = s.ppts > 0 ? ((s.fpts / s.ppts) * 100).toFixed(1) : '0.0';
+            const totalGames = rec.total.w + rec.total.l;
             const avgScore = totalGames > 0 ? (s.fpts / totalGames).toFixed(2) : '0.00';
             return {
                 team_name: raw.team_name,
-                total_wins: s.wins,
-                total_losses: s.losses,
+                total_wins: rec.total.w,
+                total_losses: rec.total.l,
                 total_fpts: s.fpts,
                 total_fpts_against: s.fpts_against,
                 total_ppts: s.ppts,
-                win_pct: winPct,
+                win_pct: rec.winPct.toFixed(1),
                 manager_efficiency: mgrEff,
                 avg_score: avgScore,
-                stdev: raw.stdev // per-season stdev not available, fall back to all-time
+                stdev: raw.stdev, // per-season stdev not available, fall back to all-time
+                record_tooltip: rec.tooltip,
+                reg_wins: rec.reg.w,
+                reg_losses: rec.reg.l,
+                po_wins: rec.po.w,
+                po_losses: rec.po.l
             };
         }
 
@@ -4409,9 +4445,9 @@
                         <div class="owner-name">${owner}</div>
                         <div class="team-name">${data.team_name}</div>
                     </td>
-                    <td class="stat-number">${data.total_wins}</td>
-                    <td class="stat-number">${data.total_losses}</td>
-                    <td class="win-pct">${data.win_pct}%</td>
+                    <td class="stat-number record-cell" title="${data.record_tooltip || ''}">${data.total_wins}</td>
+                    <td class="stat-number record-cell" title="${data.record_tooltip || ''}">${data.total_losses}</td>
+                    <td class="win-pct record-cell" title="${data.record_tooltip || ''}">${data.win_pct}%</td>
                     <td class="stat-number">${parseFloat(data.total_fpts).toFixed(1)}</td>
                     <td class="stat-number">${parseFloat(data.total_fpts_against).toFixed(1)}</td>
                     <td class="stat-number">${parseFloat(data.total_ppts).toFixed(1)}</td>
@@ -4436,9 +4472,9 @@
         const columnTooltips = {
             rank:        { title: 'Rank',        body: 'Overall all-time rank based on the current sort column.' },
             owner:       { title: 'Owner / Team', body: 'Manager name and their current team name.' },
-            wins:        { title: 'Wins (W)',     body: 'Total regular season wins across all seasons.' },
-            losses:      { title: 'Losses (L)',   body: 'Total regular season losses across all seasons.' },
-            win_pct:     { title: 'Win %',        body: 'Wins divided by total games played. The primary ranking stat.' },
+            wins:        { title: 'Wins (W)',     body: 'Regular season + meaningful playoff wins. Consolation / 3rd-place games excluded. Hover a cell for the split.' },
+            losses:      { title: 'Losses (L)',   body: 'Regular season + meaningful playoff losses. Consolation / 3rd-place games excluded. Hover a cell for the split.' },
+            win_pct:     { title: 'Win %',        body: 'Wins divided by total games (reg season + meaningful playoffs). The primary ranking stat.' },
             fpts:        { title: 'Points For (PF)', body: 'Total fantasy points scored across all games.' },
             fpts_against:{ title: 'Points Against (PA)', body: 'Total fantasy points scored against this manager.' },
             ppts:        { title: 'Max PF',       body: 'Maximum possible points each week if the optimal lineup had been set, summed across all weeks.' },
@@ -4884,7 +4920,15 @@
                             const origOwner = pickOwners[holderTeam + '|' + asset];
                             const ktcVal = getAssetKTC(asset, origOwner);
                             const ktcStr = ktcVal > 0 ? `<span class="trade-grade-val">${(ktcVal/1000).toFixed(1)}k</span>` : '';
-                            return `<div class="trade-asset ${isPick ? 'draft-pick' : 'player'}"><span>${asset}</span>${ktcStr}</div>`;
+                            // If this is a pick that's already been used in a draft, append the selected player
+                            let display = asset;
+                            if (isPick) {
+                                const picked = getPickedPlayer(asset);
+                                if (picked) {
+                                    display = `${asset} <span class="trade-asset-picked">→ ${picked}</span>`;
+                                }
+                            }
+                            return `<div class="trade-asset ${isPick ? 'draft-pick' : 'player'}"><span>${display}</span>${ktcStr}</div>`;
                         }).join('');
                     };
 
@@ -5060,23 +5104,23 @@
 
         // H2H HEATMAP
         function generateH2HGrid() {
-            // Compute H2H-based totals (regular season + playoffs) so the Record
-            // column matches the sum of the matrix cells. Using allTimeData here
-            // would mismatch because allTimeData is regular-season-only while
-            // h2hData includes playoffs — see docs/agent/DECISIONS.md.
+            // Use the canonical record (regular season + meaningful playoffs)
+            // for sort + Record column, and the adjusted H2H (h2hData minus
+            // consolation games) for the matrix cells. Row sums equal the
+            // Record column everywhere on the site.
             const h2hTotals = {};
             Object.keys(h2hData).forEach(owner => {
-                let w = 0, l = 0;
-                const opps = h2hData[owner] || {};
-                Object.keys(opps).forEach(opp => {
-                    w += opps[opp].wins || 0;
-                    l += opps[opp].losses || 0;
-                });
-                const games = w + l;
-                h2hTotals[owner] = { wins: w, losses: l, winPct: games ? w / games : 0 };
+                const rec = getRecord(owner, 'all');
+                const games = rec.total.w + rec.total.l;
+                h2hTotals[owner] = {
+                    wins: rec.total.w,
+                    losses: rec.total.l,
+                    winPct: games ? rec.total.w / games : 0,
+                    tooltip: rec.tooltip
+                };
             });
 
-            // Sort owners by H2H total wins (descending), then by H2H win% as tiebreaker
+            // Sort owners by canonical total wins (descending), then by win% as tiebreaker
             const owners = Object.keys(h2hData).sort((a, b) => {
                 const aWins = h2hTotals[a].wins;
                 const bWins = h2hTotals[b].wins;
@@ -5126,15 +5170,13 @@
                 rowTh.innerHTML = `<span class="h2h-rank">${rank}</span><span class="h2h-name">${rowOwner}</span>`;
                 tr.appendChild(rowTh);
 
-                // Record column — sum of the H2H row (reg season + playoffs).
-                // Intentionally derived from h2hData, not allTimeData, so this
-                // number equals the sum of the cells to its right.
+                // Record column — canonical total (reg season + meaningful playoffs).
                 const recTd = document.createElement('td');
-                recTd.className = 'h2h-record-cell';
+                recTd.className = 'h2h-record-cell record-cell';
                 const totalW = h2hTotals[rowOwner]?.wins || 0;
                 const totalL = h2hTotals[rowOwner]?.losses || 0;
                 recTd.textContent = `${totalW}-${totalL}`;
-                recTd.title = `${rowOwner} lifetime H2H (regular season + playoffs): ${totalW}-${totalL}`;
+                recTd.title = h2hTotals[rowOwner]?.tooltip || `${rowOwner}: ${totalW}-${totalL}`;
                 tr.appendChild(recTd);
 
                 // Per-opponent cells
@@ -5146,7 +5188,7 @@
                         td.textContent = '—';
                         td.classList.add('h2h-self');
                     } else if (h2hData[rowOwner] && h2hData[rowOwner][colOwner]) {
-                        const record = h2hData[rowOwner][colOwner];
+                        const record = getH2HAdjusted(rowOwner, colOwner) || h2hData[rowOwner][colOwner];
                         const wins = record.wins;
                         const losses = record.losses;
 
@@ -5198,23 +5240,25 @@
             const opponents = h2hData[owner];
             if (!opponents) return;
 
-            // Build opponent list with win%
-            const oppList = Object.entries(opponents).map(([opp, record]) => {
-                const total = record.wins + record.losses;
-                const winPct = total > 0 ? (record.wins / total * 100) : 0;
-                return { name: opp, wins: record.wins, losses: record.losses, total, winPct };
+            // Build opponent list with adjusted H2H (consolation games excluded)
+            const oppList = Object.entries(opponents).map(([opp]) => {
+                const adj = getH2HAdjusted(owner, opp) || { wins: 0, losses: 0 };
+                const total = adj.wins + adj.losses;
+                const winPct = total > 0 ? (adj.wins / total * 100) : 0;
+                return { name: opp, wins: adj.wins, losses: adj.losses, total, winPct };
             });
 
-            // Summary stats
-            const totalWins = oppList.reduce((s, o) => s + o.wins, 0);
-            const totalLosses = oppList.reduce((s, o) => s + o.losses, 0);
+            // Summary stats — use canonical record so the hero number matches every other tab
+            const rec = getRecord(owner, 'all');
+            const totalWins = rec.total.w;
+            const totalLosses = rec.total.l;
             const dominates = oppList.filter(o => o.winPct > 60).length;
             const dominated = oppList.filter(o => o.winPct < 40).length;
 
             document.getElementById('h2hSummaryStats').innerHTML = `
-                <div class="h2h-summary-stat">
-                    <div class="label">Overall H2H Record</div>
-                    <div class="value" style="color: var(--accent-teal);">${totalWins}-${totalLosses}</div>
+                <div class="h2h-summary-stat" title="${rec.tooltip}">
+                    <div class="label">Overall Record</div>
+                    <div class="value record-cell" style="color: var(--accent-teal);">${totalWins}-${totalLosses}</div>
                 </div>
                 <div class="h2h-summary-stat">
                     <div class="label">Dominates (>60% Win)</div>
@@ -5648,6 +5692,160 @@
                 ]
             }
         };
+
+        // ============================================================
+        // CANONICAL RECORD LOGIC — single source of truth for every tab.
+        // Record = Regular Season + MEANINGFUL playoff games.
+        // A playoff game is "meaningful" when BOTH teams were still
+        // championship-eligible going in. Once a team loses, any
+        // subsequent game they play (3rd place, 5th place bracket,
+        // any consolation) is excluded.
+        // ============================================================
+        function computePlayoffBuckets() {
+            // Walks bracketData. Returns:
+            //   meaningful: { owner: { all: {w,l}, byYear: {year:{w,l}} } }   — used for canonical totals
+            //   consolationPairs: { o1: { o2: {w,l} } }                      — games to subtract from h2hData
+            // A game is "meaningful" iff BOTH participants were still alive
+            // going in. Once a team loses, every subsequent game it plays is
+            // consolation and contributes to consolationPairs only.
+            const meaningful = {};
+            const consolationPairs = {};
+            Object.keys(allTimeData).forEach(o => {
+                meaningful[o] = { all: { w: 0, l: 0 }, byYear: {} };
+                consolationPairs[o] = {};
+            });
+
+            Object.keys(bracketData).forEach(yearStr => {
+                const year = parseInt(yearStr, 10);
+                const rosterMap = rosters[year];
+                if (!rosterMap) return;
+                const alive = new Set(Object.values(rosterMap));
+                ['round1', 'round2', 'round3'].forEach(rk => {
+                    const games = bracketData[year][rk] || [];
+                    games.forEach(g => {
+                        const o1 = rosterMap[g.t1];
+                        const o2 = rosterMap[g.t2];
+                        if (!o1 || !o2) return;
+                        const winner = rosterMap[g.w];
+                        const loser = winner === o1 ? o2 : o1;
+                        const meaningfulGame = alive.has(o1) && alive.has(o2);
+                        if (meaningfulGame) {
+                            meaningful[winner].all.w += 1;
+                            meaningful[loser].all.l += 1;
+                            meaningful[winner].byYear[year] = meaningful[winner].byYear[year] || { w: 0, l: 0 };
+                            meaningful[loser].byYear[year] = meaningful[loser].byYear[year] || { w: 0, l: 0 };
+                            meaningful[winner].byYear[year].w += 1;
+                            meaningful[loser].byYear[year].l += 1;
+                            alive.delete(loser);
+                        } else {
+                            // Record this as consolation so callers can strip it from h2hData totals
+                            consolationPairs[winner][loser] = consolationPairs[winner][loser] || { w: 0, l: 0 };
+                            consolationPairs[loser][winner] = consolationPairs[loser][winner] || { w: 0, l: 0 };
+                            consolationPairs[winner][loser].w += 1;
+                            consolationPairs[loser][winner].l += 1;
+                        }
+                    });
+                });
+            });
+            return { meaningful, consolationPairs };
+        }
+
+        let __playoffBucketsCache = null;
+        function getPlayoffBuckets() {
+            if (!__playoffBucketsCache) __playoffBucketsCache = computePlayoffBuckets();
+            return __playoffBucketsCache;
+        }
+        // Legacy shim: older callers expected { owner: {all, byYear} }
+        function getPlayoffRecords() { return getPlayoffBuckets().meaningful; }
+        function getConsolationPairs() { return getPlayoffBuckets().consolationPairs; }
+
+        // Draft pick → player who was selected with it. Returns player name
+        // or null. Accepts both trade-asset format ("2025 3.02") and similar.
+        let __pickedPlayerCache = null;
+        function buildPickedPlayerIndex() {
+            const idx = {};
+            const mapDraftKey = (yr, round, posInRound) => `${yr}|${round}.${posInRound}`;
+            // Each draftData entry: [round, overall, player, pos, owner, team, position_in_round]
+            const sources = [
+                { yr: 2023, arr: draftData.startup2023 || [] },
+                { yr: 2024, arr: draftData.rookie2024 || [] },
+                { yr: 2025, arr: draftData.rookie2025 || [] }
+            ];
+            sources.forEach(src => {
+                src.arr.forEach(row => {
+                    const round = row[0];
+                    const player = row[2];
+                    const posInRound = row[6];
+                    if (round && player && posInRound) {
+                        idx[mapDraftKey(src.yr, round, posInRound)] = player;
+                    }
+                });
+            });
+            return idx;
+        }
+        function getPickedPlayer(asset) {
+            // Trade asset format: "2025 3.02" or "2024 R1" (R# format = round only, no position, unknown player)
+            const m = asset && asset.match(/^(\d{4})\s+(\d+)\.(\d+)$/);
+            if (!m) return null;
+            if (!__pickedPlayerCache) __pickedPlayerCache = buildPickedPlayerIndex();
+            const yr = parseInt(m[1], 10);
+            const round = parseInt(m[2], 10);
+            const pos = parseInt(m[3], 10);
+            return __pickedPlayerCache[`${yr}|${round}.${pos}`] || null;
+        }
+
+        // Adjusted H2H between two owners — h2hData minus consolation games.
+        // Matches the definition used by the Record column everywhere else.
+        function getH2HAdjusted(rowOwner, colOwner) {
+            const base = (h2hData[rowOwner] && h2hData[rowOwner][colOwner]) || null;
+            if (!base) return null;
+            const adj = (getConsolationPairs()[rowOwner] && getConsolationPairs()[rowOwner][colOwner]) || { w: 0, l: 0 };
+            return {
+                wins: Math.max(0, (base.wins || 0) - adj.w),
+                losses: Math.max(0, (base.losses || 0) - adj.l)
+            };
+        }
+
+        /**
+         * Canonical record for an owner.
+         * @param {string} owner - owner key from allTimeData
+         * @param {string|number} season - 'all' or a specific year like 2024
+         * @returns {object} { reg:{w,l}, po:{w,l}, total:{w,l}, winPct, tooltip }
+         */
+        function getRecord(owner, season = 'all') {
+            const raw = allTimeData[owner];
+            if (!raw) return { reg: { w: 0, l: 0 }, po: { w: 0, l: 0 }, total: { w: 0, l: 0 }, winPct: 0, tooltip: '' };
+
+            let regW = 0, regL = 0;
+            if (season === 'all') {
+                Object.values(raw.seasons || {}).forEach(s => { regW += s.wins || 0; regL += s.losses || 0; });
+            } else {
+                const s = raw.seasons?.[String(season)];
+                if (s) { regW = s.wins || 0; regL = s.losses || 0; }
+            }
+
+            const poAll = getPlayoffRecords()[owner] || { all: { w: 0, l: 0 }, byYear: {} };
+            let poW = 0, poL = 0;
+            if (season === 'all') {
+                poW = poAll.all.w; poL = poAll.all.l;
+            } else {
+                const y = poAll.byYear[season] || { w: 0, l: 0 };
+                poW = y.w; poL = y.l;
+            }
+
+            const totalW = regW + poW;
+            const totalL = regL + poL;
+            const games = totalW + totalL;
+            const winPct = games > 0 ? (totalW / games) * 100 : 0;
+            const tooltip = `Regular Season: ${regW}-${regL} | Meaningful Playoffs: ${poW}-${poL}\n(Playoffs exclude 3rd-place and consolation games)`;
+            return {
+                reg: { w: regW, l: regL },
+                po: { w: poW, l: poL },
+                total: { w: totalW, l: totalL },
+                winPct,
+                tooltip
+            };
+        }
 
         function renderBracket(year, containerId) {
             const container = document.getElementById(containerId);
@@ -6576,10 +6774,11 @@
 
                 const tradedHtml = dc.traded.length > 0 ? `<div class="dc-traded-away"><div class="dc-traded-label">Traded Away</div>${dc.traded.map(t => `<div class="dc-traded-pick">${t}</div>`).join('')}</div>` : '';
 
-                const record = allTimeData[owner] ? `${allTimeData[owner].total_wins}-${allTimeData[owner].total_losses}` : '';
+                const recObj = getRecord(owner, 'all');
+                const record = `${recObj.total.w}-${recObj.total.l}`;
                 return `<div class="dc-card">
                     <div class="dc-card-header">
-                        <div><h3>#${idx+1} ${teamName}</h3><div style="font-size:0.8rem;color:var(--text-secondary)">${owner}</div><div style="font-size:0.7rem;color:var(--text-secondary);opacity:0.6;margin-top:0.15rem">${record} career</div></div>
+                        <div><h3>#${idx+1} ${teamName}</h3><div style="font-size:0.8rem;color:var(--text-secondary)">${owner}</div><div class="record-cell" style="font-size:0.7rem;color:var(--text-secondary);opacity:0.6;margin-top:0.15rem" title="${recObj.tooltip}">${record} career</div></div>
                         <div class="dc-value">${totalVal.toLocaleString()}</div>
                     </div>
                     <div class="dc-meta">
@@ -7098,7 +7297,9 @@
                 const owners = Object.keys(allTimeData);
                 const seasonScores = owners.map(o => {
                     const s = allTimeData[o].seasons[yr];
-                    return s ? { owner: o, fpts: parseFloat(s.fpts), wins: s.wins, losses: s.losses } : null;
+                    if (!s) return null;
+                    const r = getRecord(o, yr);
+                    return { owner: o, fpts: parseFloat(s.fpts), wins: r.total.w, losses: r.total.l, tooltip: r.tooltip };
                 }).filter(Boolean).sort((a,b) => b.fpts - a.fpts);
                 const totalPts = seasonScores.reduce((sum, s) => sum + s.fpts, 0);
                 const avgPts = (totalPts / seasonScores.length / 14).toFixed(1);
@@ -7139,7 +7340,7 @@
                     const isChamp = finish.includes('Champion');
                     const isPlayoff = finish.length > 0;
                     const rowCls = isChamp ? 'champ-row' : isPlayoff ? 'playoff-row' : '';
-                    standingsHtml += `<tr class="${rowCls}"><td class="rank-col">${i+1}</td><td class="owner-col" onclick="openTeamProfile('${s.owner}')">${s.owner}</td><td class="record-col">${s.wins}-${s.losses}</td><td class="pts-col">${s.fpts.toFixed(1)}</td><td style="font-size:0.78rem;color:${isChamp?'var(--accent-gold)':isPlayoff?'var(--accent-teal)':'var(--text-secondary)'}">${finish}</td></tr>`;
+                    standingsHtml += `<tr class="${rowCls}"><td class="rank-col">${i+1}</td><td class="owner-col" onclick="openTeamProfile('${s.owner}')">${s.owner}</td><td class="record-col record-cell" title="${s.tooltip || ''}">${s.wins}-${s.losses}</td><td class="pts-col">${s.fpts.toFixed(1)}</td><td style="font-size:0.78rem;color:${isChamp?'var(--accent-gold)':isPlayoff?'var(--accent-teal)':'var(--text-secondary)'}">${finish}</td></tr>`;
                 });
                 standingsHtml += '</tbody></table>';
 
@@ -7357,8 +7558,16 @@
 
         function openTeamProfile(owner) {
             if (!owner || typeof owner !== 'string') return;
-            const data = allTimeData[owner];
-            if (!data) { console.warn('[DynastyFF] No data for owner:', owner); return; }
+            const rawData = allTimeData[owner];
+            if (!rawData) { console.warn('[DynastyFF] No data for owner:', owner); return; }
+            // Overlay canonical record (reg + meaningful playoffs) onto the all-time struct
+            const __rec = getRecord(owner, 'all');
+            const data = Object.assign({}, rawData, {
+                total_wins: __rec.total.w,
+                total_losses: __rec.total.l,
+                win_pct: __rec.winPct.toFixed(1),
+                record_tooltip: __rec.tooltip
+            });
 
             // Remember current tab so back button returns there
             const currentActive = document.querySelector('.tab-content.active');
@@ -7387,7 +7596,7 @@
             if (owner === 'nendy') honors.push('😤 All-Time Win Streak (8)');
             if (owner === 'doyersbeast') honors.push('💥 All-Time Blowout (119.8)');
 
-            // Build season cards
+            // Build season cards (record = canonical reg + meaningful playoffs)
             const seasonCards = CONFIG.SEASONS.map(yr => {
                 const s = data.seasons[yr];
                 if (!s) return '';
@@ -7397,10 +7606,11 @@
                     return os ? { owner: o, fpts: parseFloat(os.fpts) } : null;
                 }).filter(Boolean).sort((a,b) => b.fpts - a.fpts);
                 const rank = allOwners.findIndex(o => o.owner === owner) + 1;
+                const seasonRec = getRecord(owner, yr);
                 return `<div class="tp-season-card">
                     <div class="rank-badge">#${rank} in pts</div>
                     <div class="yr">${yr}</div>
-                    <div class="rec">${s.wins}-${s.losses}</div>
+                    <div class="rec record-cell" title="${seasonRec.tooltip}">${seasonRec.total.w}-${seasonRec.total.l}</div>
                     <div class="pts">${parseFloat(s.fpts).toFixed(1)} pts</div>
                     ${finish ? `<div class="finish">${finish}</div>` : ''}
                 </div>`;
@@ -7439,8 +7649,12 @@
                 </div>`;
             }).join('') : '<div class="tp-empty">No waiver data.</div>';
 
-            // Build H2H
-            const ownerH2H = h2hData[owner] || {};
+            // Build H2H (adjusted — consolation/3rd-place games removed, matching the H2H tab)
+            const rawH2H = h2hData[owner] || {};
+            const ownerH2H = {};
+            Object.keys(rawH2H).forEach(opp => {
+                ownerH2H[opp] = getH2HAdjusted(owner, opp) || rawH2H[opp];
+            });
             const h2hHtml = Object.keys(ownerH2H).sort((a,b) => {
                 const diff = (ownerH2H[b].wins - ownerH2H[b].losses) - (ownerH2H[a].wins - ownerH2H[a].losses);
                 return diff !== 0 ? -diff : a.localeCompare(b);
@@ -7481,8 +7695,8 @@
                         ${honors.length ? '<div class="tp-hero-badges">' + honors.map(h => `<span class="tp-hero-badge">${h}</span>`).join('') + '</div>' : ''}
                     </div>
                     <div class="tp-hero-stats">
-                        <div><div class="tp-hero-stat-val">${data.total_wins}-${data.total_losses}</div><div class="tp-hero-stat-lbl">All-Time</div></div>
-                        <div><div class="tp-hero-stat-val">${data.win_pct}%</div><div class="tp-hero-stat-lbl">Win Rate</div></div>
+                        <div title="${data.record_tooltip}"><div class="tp-hero-stat-val record-cell">${data.total_wins}-${data.total_losses}</div><div class="tp-hero-stat-lbl">All-Time</div></div>
+                        <div title="${data.record_tooltip}"><div class="tp-hero-stat-val record-cell">${data.win_pct}%</div><div class="tp-hero-stat-lbl">Win Rate</div></div>
                         <div><div class="tp-hero-stat-val">${parseFloat(data.avg_score).toFixed(1)}</div><div class="tp-hero-stat-lbl">Avg / Week</div></div>
                     </div>
                 </div>
@@ -7490,7 +7704,7 @@
                 <div class="tp-section">
                     <div class="tp-section-title">Career Stats</div>
                     <div class="tp-stats-grid">
-                        <div class="tp-stat-card"><div class="val">${data.total_wins}-${data.total_losses}</div><div class="lbl">Record</div></div>
+                        <div class="tp-stat-card" title="${data.record_tooltip}"><div class="val record-cell">${data.total_wins}-${data.total_losses}</div><div class="lbl">Record</div></div>
                         <div class="tp-stat-card"><div class="val">${parseFloat(data.total_fpts).toFixed(0)}</div><div class="lbl">Points For</div></div>
                         <div class="tp-stat-card"><div class="val">${parseFloat(data.total_fpts_against).toFixed(0)}</div><div class="lbl">Points Against</div></div>
                         <div class="tp-stat-card"><div class="val">${data.max_week}</div><div class="lbl">Best Week</div></div>
