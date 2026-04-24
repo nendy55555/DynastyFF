@@ -1,9 +1,13 @@
 # Session State
 
 ## Last Updated
-2026-04-10
+2026-04-24
 
 ## Completed This Session
+
+1. **H2H Record column bug fix** — The Record column on the Head-to-Head tab was pulling from `allTimeData` (regular season only) while matrix cells pulled from `h2hData` (reg season + playoffs), so the Record didn't equal the sum of the row. Fixed `generateH2HGrid()` to compute totals from `h2hData` for both the Record column and the sort order. Subtitle text updated. Decision logged in DECISIONS.md.
+
+## Previously Completed
 
 1. **CONFIG block extraction** — Created `CONFIG` object at top of JS with 25+ extracted constants (current year, team count, Sleeper username, CORS proxy, pick valuation tuning, trade grading coefficients, draft grading multipliers). All references updated.
 

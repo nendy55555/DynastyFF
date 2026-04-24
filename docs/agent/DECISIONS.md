@@ -134,6 +134,22 @@ CORS_PROXY_FALLBACKS: [
 
 ---
 
+## 2026-04-24 — H2H Record column now sums the row (was regular-season only)
+
+**Decision:** `generateH2HGrid()` computes the Record column by summing `h2hData[owner]` across all opponents, instead of reading `allTimeData[owner].total_wins/total_losses`. Sort order uses the same H2H totals.
+
+**Why:**
+- `allTimeData` is regular season only (derived from `seasons[year].wins/losses`)
+- `h2hData` includes regular season + playoffs (per the existing comment on the constant)
+- The old Record column used `allTimeData` while the matrix cells used `h2hData`, so the Record didn't equal the sum of the row — users noticed the inconsistency
+- Aligning both to `h2hData` is the simpler fix because the matrix is the primary visual
+
+**Tradeoff:** Rankings in the H2H table can now diverge slightly from other tabs that use regular-season standings. Accepted — the H2H tab's own numbers are internally consistent, which matters more.
+
+**When to revisit:** If we add a "regular season only" toggle to the H2H view, both sources would be needed.
+
+---
+
 ## 2026-04-20 — Did NOT add: Chart.js self-hosted copy
 
 **Considered:** Downloading `chart.umd.js` into the repo and serving it from GitHub Pages to eliminate the CDN dependency entirely.

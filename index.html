@@ -1011,6 +1011,73 @@
             gap: 0.5rem;
         }
 
+        /* Chart title info tooltips (Trends tab) */
+        .chart-info-wrap { position: relative; display: inline-flex; align-items: center; margin-left: 0.4rem; }
+        .chart-info-icon {
+            width: 16px; height: 16px; border-radius: 50%;
+            background: rgba(0, 255, 184, 0.08);
+            border: 1px solid rgba(0, 255, 184, 0.35);
+            color: var(--accent-teal);
+            font-size: 0.65rem; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center;
+            cursor: help; flex-shrink: 0;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.18s ease, transform 0.18s ease;
+        }
+        .chart-info-wrap:hover .chart-info-icon { background: rgba(0, 255, 184, 0.18); transform: scale(1.08); }
+        .chart-info-tip {
+            visibility: hidden; opacity: 0;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            background: #0f1923;
+            border: 1px solid rgba(0, 255, 184, 0.25);
+            border-radius: 8px;
+            padding: 10px 14px;
+            width: 250px;
+            font-size: 0.78rem;
+            font-weight: 400;
+            color: #9ca3af;
+            line-height: 1.5;
+            text-transform: none;
+            letter-spacing: 0;
+            z-index: 999;
+            pointer-events: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+            transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+            white-space: normal;
+        }
+        .chart-info-tip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(0, 255, 184, 0.25);
+        }
+        .chart-info-tip strong {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #00ffb8;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 5px;
+        }
+        .chart-info-wrap:hover .chart-info-tip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        /* On narrow viewports, anchor the tooltip to the right so it doesn't clip off the left edge */
+        @media (max-width: 520px) {
+            .chart-info-tip { left: auto; right: -8px; transform: translateY(4px); }
+            .chart-info-tip::after { left: auto; right: 14px; transform: none; }
+            .chart-info-wrap:hover .chart-info-tip { transform: translateY(0); }
+        }
+
         .chart-content {
             position: relative;
             height: 100%;
@@ -3208,7 +3275,7 @@
         <div id="h2h" class="tab-content">
             <h2 class="section-header">Head-to-Head Lifetime Record</h2>
             <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
-                Includes regular season + playoffs. Green: winning record | Red: losing record | Gold: .500 record
+                Record column = sum of each row (regular season + playoffs). Green: winning record | Red: losing record | Gold: .500 record
             </p>
 
             <div class="h2h-container">
@@ -3314,13 +3381,23 @@
 
             <div class="chart-grid">
                 <div class="chart-container">
-                    <div class="chart-title">📊 All-Time PF by Team</div>
+                    <div class="chart-title">📊 All-Time PF by Team
+                        <span class="chart-info-wrap">
+                            <span class="chart-info-icon">i</span>
+                            <span class="chart-info-tip"><strong>All-Time PF</strong>Total fantasy points scored by starting lineups across every season the team has played (2023–2025). Bench, taxi, and IR points don't count. Higher = consistent scoring power over the league's history.</span>
+                        </span>
+                    </div>
                     <div class="chart-content">
                         <canvas id="pfByTeamChart"></canvas>
                     </div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">📈 Manager Efficiency</div>
+                    <div class="chart-title">📈 Manager Efficiency
+                        <span class="chart-info-wrap">
+                            <span class="chart-info-icon">i</span>
+                            <span class="chart-info-tip"><strong>Manager Efficiency</strong>Actual PF ÷ Max PF, shown as a percentage. Measures how often you started the right players vs. your roster's optimal ceiling. 100% = perfect lineup every week. Lower scores mean points were left on the bench.</span>
+                        </span>
+                    </div>
                     <div class="chart-content">
                         <canvas id="mgrEffChart"></canvas>
                     </div>
@@ -3329,13 +3406,23 @@
 
             <div class="chart-grid">
                 <div class="chart-container">
-                    <div class="chart-title">📉 2024 → 2025 PF Change</div>
+                    <div class="chart-title">📉 2024 → 2025 PF Change
+                        <span class="chart-info-wrap">
+                            <span class="chart-info-icon">i</span>
+                            <span class="chart-info-tip"><strong>Year-over-Year PF Change</strong>Total Points For in 2025 minus total Points For in 2024. Positive bars = the team scored more this season than last; negative bars = regression. Quick read on who's trending up vs. fading.</span>
+                        </span>
+                    </div>
                     <div class="chart-content">
                         <canvas id="yoyChangeChart"></canvas>
                     </div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">⚠️ Max PF Breakdown: Actual vs. Bench Points</div>
+                    <div class="chart-title">⚠️ Max PF Breakdown: Actual vs. Bench Points
+                        <span class="chart-info-wrap">
+                            <span class="chart-info-icon">i</span>
+                            <span class="chart-info-tip"><strong>Max PF Breakdown</strong>Max PF is the ceiling: the most points a team could have scored if every lineup was set perfectly. Each bar splits into Actual (what the starters scored) and Bench (points left on the bench). A tall bench segment = poor lineup decisions.</span>
+                        </span>
+                    </div>
                     <div class="chart-content">
                         <canvas id="maxPfChart"></canvas>
                     </div>
@@ -4973,14 +5060,28 @@
 
         // H2H HEATMAP
         function generateH2HGrid() {
-            // Sort owners by total wins (descending), then by win% as tiebreaker
+            // Compute H2H-based totals (regular season + playoffs) so the Record
+            // column matches the sum of the matrix cells. Using allTimeData here
+            // would mismatch because allTimeData is regular-season-only while
+            // h2hData includes playoffs — see docs/agent/DECISIONS.md.
+            const h2hTotals = {};
+            Object.keys(h2hData).forEach(owner => {
+                let w = 0, l = 0;
+                const opps = h2hData[owner] || {};
+                Object.keys(opps).forEach(opp => {
+                    w += opps[opp].wins || 0;
+                    l += opps[opp].losses || 0;
+                });
+                const games = w + l;
+                h2hTotals[owner] = { wins: w, losses: l, winPct: games ? w / games : 0 };
+            });
+
+            // Sort owners by H2H total wins (descending), then by H2H win% as tiebreaker
             const owners = Object.keys(h2hData).sort((a, b) => {
-                const aWins = allTimeData[a]?.total_wins || 0;
-                const bWins = allTimeData[b]?.total_wins || 0;
+                const aWins = h2hTotals[a].wins;
+                const bWins = h2hTotals[b].wins;
                 if (bWins !== aWins) return bWins - aWins;
-                const aWinPct = parseFloat(allTimeData[a]?.win_pct || 0);
-                const bWinPct = parseFloat(allTimeData[b]?.win_pct || 0);
-                return bWinPct - aWinPct;
+                return h2hTotals[b].winPct - h2hTotals[a].winPct;
             });
 
             const container = document.getElementById('h2hGrid');
@@ -5025,12 +5126,15 @@
                 rowTh.innerHTML = `<span class="h2h-rank">${rank}</span><span class="h2h-name">${rowOwner}</span>`;
                 tr.appendChild(rowTh);
 
-                // Record column
+                // Record column — sum of the H2H row (reg season + playoffs).
+                // Intentionally derived from h2hData, not allTimeData, so this
+                // number equals the sum of the cells to its right.
                 const recTd = document.createElement('td');
                 recTd.className = 'h2h-record-cell';
-                const totalW = allTimeData[rowOwner]?.total_wins || 0;
-                const totalL = allTimeData[rowOwner]?.total_losses || 0;
+                const totalW = h2hTotals[rowOwner]?.wins || 0;
+                const totalL = h2hTotals[rowOwner]?.losses || 0;
                 recTd.textContent = `${totalW}-${totalL}`;
+                recTd.title = `${rowOwner} lifetime H2H (regular season + playoffs): ${totalW}-${totalL}`;
                 tr.appendChild(recTd);
 
                 // Per-opponent cells
