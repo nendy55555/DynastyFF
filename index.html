@@ -4237,10 +4237,13 @@
                     errors.push(o + ': season wins sum (' + seasonWins + ') !== total_wins (' + d.total_wins + ')');
                 }
             });
-            // Validate transaction data
-            if (!transactionData?.trades || !Array.isArray(transactionData.trades)) {
-                errors.push('transactionData.trades is missing or not an array');
-            }
+            // NOTE: transactionData validation removed. It used to live here, but `const transactionData`
+            // is declared ~470 lines further down, so this IIFE hits TDZ and throws
+            // ReferenceError: Cannot access 'transactionData' before initialization, which halts the
+            // entire <script> and silently kills every feature below — Power Rankings, Draft Board,
+            // Rosters, etc. Every actual consumer of transactionData uses optional chaining
+            // (transactionData?.trades || []) and handles missing data gracefully, so this defensive
+            // check was redundant. If we ever want trade-data validation, do it from initTransactions().
             if (errors.length) {
                 console.warn('[DynastyFF] Data validation issues:\n  • ' + errors.join('\n  • '));
                 // Surface the first N errors as a dismissible page banner so issues don't stay invisible
