@@ -4070,6 +4070,36 @@
 
         const streakData = {"jakeschwartz":{"longestWin":5,"longestLoss":5},"JustinG66":{"longestWin":4,"longestLoss":6},"SweetSweet":{"longestWin":3,"longestLoss":7},"grffnboss":{"longestWin":3,"longestLoss":10},"pedick":{"longestWin":8,"longestLoss":3},"shaqdeezy":{"longestWin":5,"longestLoss":9},"DeezNutz02":{"longestWin":7,"longestLoss":4},"MrEton":{"longestWin":7,"longestLoss":5},"nsbarbarino":{"longestWin":7,"longestLoss":4},"andrewmcorral":{"longestWin":7,"longestLoss":4},"doyersbeast":{"longestWin":5,"longestLoss":5},"bradysballzfdf":{"longestWin":4,"longestLoss":5}};
 
+        // ─────────────────────────────────────────────────────────────────────────
+        // DISPLAY-NAME HELPERS
+        // The site keys everything off `owner` (Sleeper username) for stability —
+        // URLs, h2h lookups, click handlers. But teams have proper names ("Trash Tank",
+        // "Two Chubbs", "Olave Garden Hurts My Ass"), and several teams have co-managers,
+        // so the display label everywhere should be the team name.
+        // displayName(o)        → team_name when set, falls back to owner key
+        // ownerByDisplayName(s) → reverse lookup for legacy text-matching click wiring
+        // ─────────────────────────────────────────────────────────────────────────
+        function displayName(owner) {
+            if (!owner) return '';
+            const tn = allTimeData[owner]?.team_name;
+            return tn && tn.trim() ? tn : owner;
+        }
+        // Build reverse map once for the global click-link observer to resolve clicks
+        // even when an element's textContent is the team name rather than the owner key.
+        const _displayToOwner = (() => {
+            const m = {};
+            Object.keys(allTimeData).forEach(o => {
+                m[o] = o; // owner string itself
+                const tn = allTimeData[o]?.team_name;
+                if (tn) m[tn] = o;
+            });
+            return m;
+        })();
+        function ownerByDisplayName(name) {
+            if (!name) return null;
+            return _displayToOwner[name.trim()] || null;
+        }
+
         // DRAFT BOARD DATA
         const draftData = {
             rookie2025: [
@@ -4462,9 +4492,9 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><span class="rank-number">${idx + 1}</span></td>
-                    <td>
-                        <div class="owner-name">${owner}</div>
-                        <div class="team-name">${data.team_name}</div>
+                    <td data-owner="${owner}">
+                        <div class="owner-name">${displayName(owner)}</div>
+                        <div class="team-name" style="opacity:0.7">${owner}</div>
                     </td>
                     <td class="stat-number record-cell" title="${data.record_tooltip || ''}">${data.total_wins}</td>
                     <td class="stat-number record-cell" title="${data.record_tooltip || ''}">${data.total_losses}</td>
@@ -4783,10 +4813,12 @@
             transactionData.trades.forEach(trade => {
                 Object.keys(trade[3]).forEach(team => allTeams.add(team));
             });
-            Array.from(allTeams).sort().forEach(team => {
+            // Sort by display name so the dropdown reads alphabetically by team name
+            Array.from(allTeams).sort((a, b) => displayName(a).localeCompare(displayName(b))).forEach(team => {
                 const option = document.createElement('option');
-                option.value = team;
-                option.textContent = team;
+                option.value = team; // owner key — keeps filter logic working
+                const tn = allTimeData[team]?.team_name;
+                option.textContent = (tn && tn !== team) ? `${tn} (${team})` : team;
                 teamSelect.appendChild(option);
             });
 
@@ -4964,7 +4996,7 @@
                         <div class="trade-card-body">
                             <div class="trade-side">
                                 <div class="trade-side-header">
-                                    <span>${team1} receives</span>
+                                    <span data-owner="${team1}" title="${team1}">${displayName(team1)} receives</span>
                                     <span class="trade-side-ktc">${(g1.gotVal/1000).toFixed(1)}k KTC</span>
                                 </div>
                                 <div class="trade-side-assets">
@@ -4976,7 +5008,7 @@
                             </div>
                             <div class="trade-side">
                                 <div class="trade-side-header">
-                                    <span>${team2} receives</span>
+                                    <span data-owner="${team2}" title="${team2}">${displayName(team2)} receives</span>
                                     <span class="trade-side-ktc">${(g2.gotVal/1000).toFixed(1)}k KTC</span>
                                 </div>
                                 <div class="trade-side-assets">
@@ -4985,12 +5017,12 @@
                             </div>
                         </div>
                         <div class="trade-grade-row">
-                            <div>${gradeHTML(g1)} <span style="font-size:0.72rem;color:var(--text-tertiary);margin-left:0.3rem">${team1}</span></div>
+                            <div>${gradeHTML(g1)} <span data-owner="${team1}" title="${team1}" style="font-size:0.72rem;color:var(--text-tertiary);margin-left:0.3rem">${displayName(team1)}</span></div>
                             <div class="trade-grade-info-wrap">
                                 <span class="trade-grade-info-icon">i</span>
                                 <span class="trade-grade-tip">Grades use KTC-style value adjustment — studs count exponentially more than depth, so 4 mid-round picks ≠ one star. % shows how each side fared relative to what they gave up.</span>
                             </div>
-                            <div><span style="font-size:0.72rem;color:var(--text-tertiary);margin-right:0.3rem">${team2}</span> ${gradeHTML(g2)}</div>
+                            <div><span data-owner="${team2}" title="${team2}" style="font-size:0.72rem;color:var(--text-tertiary);margin-right:0.3rem">${displayName(team2)}</span> ${gradeHTML(g2)}</div>
                         </div>
                     `;
 
@@ -5172,7 +5204,9 @@
             owners.forEach(owner => {
                 const th = document.createElement('th');
                 th.className = 'h2h-col-header';
-                th.innerHTML = `<span>${owner}</span>`;
+                th.dataset.owner = owner;
+                th.title = owner; // manager handle on hover
+                th.innerHTML = `<span>${displayName(owner)}</span>`;
                 headerRow.appendChild(th);
             });
             thead.appendChild(headerRow);
@@ -5183,11 +5217,13 @@
             owners.forEach((rowOwner, idx) => {
                 const tr = document.createElement('tr');
 
-                // Row label (team name)
+                // Row label (team name primary, manager handle on hover)
                 const rowTh = document.createElement('td');
                 rowTh.className = 'h2h-row-header';
+                rowTh.dataset.owner = rowOwner;
+                rowTh.title = rowOwner;
                 const rank = idx + 1;
-                rowTh.innerHTML = `<span class="h2h-rank">${rank}</span><span class="h2h-name">${rowOwner}</span>`;
+                rowTh.innerHTML = `<span class="h2h-rank">${rank}</span><span class="h2h-name">${displayName(rowOwner)}</span>`;
                 tr.appendChild(rowTh);
 
                 // Record column — canonical total (reg season + meaningful playoffs).
@@ -5221,7 +5257,7 @@
                         }
 
                         td.textContent = `${wins}-${losses}`;
-                        td.title = `${rowOwner} vs ${colOwner}: ${wins}-${losses}`;
+                        td.title = `${displayName(rowOwner)} vs ${displayName(colOwner)}: ${wins}-${losses}`;
                     }
 
                     tr.appendChild(td);
@@ -5244,7 +5280,9 @@
             owners.forEach(owner => {
                 const opt = document.createElement('option');
                 opt.value = owner;
-                opt.textContent = `${owner} (${allTimeData[owner].team_name})`;
+                const tn = allTimeData[owner]?.team_name;
+                // Team name primary; if it differs from the owner key, show the manager in parens.
+                opt.textContent = (tn && tn !== owner) ? `${tn} (${owner})` : owner;
                 select.appendChild(opt);
             });
 
@@ -5304,8 +5342,8 @@
                     const row = document.createElement('div');
                     row.className = 'h2h-matchup-row';
                     row.innerHTML = `
-                        <div>
-                            <div class="h2h-opp-name" style="color: var(--text-primary);">${opp.name}</div>
+                        <div data-owner="${opp.name}">
+                            <div class="h2h-opp-name" style="color: var(--text-primary);" title="${opp.name}">${displayName(opp.name)}</div>
                             <div class="h2h-win-bar">
                                 <div class="h2h-win-bar-fill" style="width: ${opp.winPct}%; background: ${barColor};"></div>
                             </div>
@@ -5333,7 +5371,7 @@
                     <div class="record-item">
                         <span class="record-rank">${idx + 1}</span>
                         <span class="record-value">${record.score.toFixed(2)}</span>
-                        <div class="record-detail">${record.owner} • ${record.season} W${record.week}</div>
+                        <div class="record-detail" data-owner="${record.owner}" title="${record.owner}">${displayName(record.owner)} • ${record.season} W${record.week}</div>
                     </div>
                 `;
             });
@@ -5349,7 +5387,7 @@
                     <div class="record-item">
                         <span class="record-rank">${idx + 1}</span>
                         <span class="record-value">${record.margin.toFixed(2)}</span>
-                        <div class="record-detail">${record.winner} ${record.winScore} vs ${record.loser} ${record.loseScore}</div>
+                        <div class="record-detail" title="${record.winner} ${record.winScore} vs ${record.loser} ${record.loseScore}"><span data-owner="${record.winner}">${displayName(record.winner)}</span> ${record.winScore} vs <span data-owner="${record.loser}">${displayName(record.loser)}</span> ${record.loseScore}</div>
                     </div>
                 `;
             });
@@ -5365,7 +5403,7 @@
                     <div class="record-item">
                         <span class="record-rank">${idx + 1}</span>
                         <span class="record-value">${record.margin.toFixed(2)}</span>
-                        <div class="record-detail">${record.winner} ${record.winScore} vs ${record.loser} ${record.loseScore}</div>
+                        <div class="record-detail" title="${record.winner} ${record.winScore} vs ${record.loser} ${record.loseScore}"><span data-owner="${record.winner}">${displayName(record.winner)}</span> ${record.winScore} vs <span data-owner="${record.loser}">${displayName(record.loser)}</span> ${record.loseScore}</div>
                     </div>
                 `;
             });
@@ -5386,7 +5424,7 @@
                 const winItem = document.createElement('div');
                 winItem.className = 'streak-item';
                 winItem.innerHTML = `
-                    <span class="streak-name">${owner}</span>
+                    <span class="streak-name" data-owner="${owner}" title="${owner}">${displayName(owner)}</span>
                     <span class="streak-value">${streakData[owner].longestWin}</span>
                 `;
                 winList.appendChild(winItem);
@@ -5400,7 +5438,7 @@
                 const lossItem = document.createElement('div');
                 lossItem.className = 'streak-item';
                 lossItem.innerHTML = `
-                    <span class="streak-name">${owner}</span>
+                    <span class="streak-name" data-owner="${owner}" title="${owner}">${displayName(owner)}</span>
                     <span class="streak-value">${streakData[owner].longestLoss}</span>
                 `;
                 lossDiv.appendChild(lossItem);
@@ -5425,7 +5463,7 @@
             seasonScoresChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: owners,
+                    labels: owners.map(o => displayName(o)),
                     datasets: [
                         {
                             label: '2023 Max PF',
@@ -5486,7 +5524,7 @@
             pfByTeamChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: owners,
+                    labels: owners.map(o => displayName(o)),
                     datasets: [
                         {
                             label: 'Total PF',
@@ -5540,7 +5578,7 @@
             mgrEffChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: owners,
+                    labels: owners.map(o => displayName(o)),
                     datasets: [{
                         label: 'Manager Efficiency %',
                         data: effData,
@@ -5587,7 +5625,7 @@
             yoyChangeChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: owners,
+                    labels: owners.map(o => displayName(o)),
                     datasets: [{
                         label: '% Change (2024→2025)',
                         data: changeData,
@@ -5630,7 +5668,7 @@
             maxPfChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: owners,
+                    labels: owners.map(o => displayName(o)),
                     datasets: [
                         {
                             label: 'Actual Points For',
@@ -5891,9 +5929,9 @@
             const getSeed = (slot) => seedMap[slot] || slot;
 
             const seedEntry = (slot, name, score, isWinner) => `
-                        <div class="team-entry ${isWinner ? 'winner' : 'loser'}">
+                        <div class="team-entry ${isWinner ? 'winner' : 'loser'}" data-owner="${name}">
                             <span class="seed-badge">${getSeed(slot)}</span>
-                            <span class="team-name-bracket">${name}</span>
+                            <span class="team-name-bracket" title="${name}">${displayName(name)}</span>
                             <span class="team-score">${score || '-'}</span>
                         </div>`;
 
@@ -6196,12 +6234,12 @@
                 const finishLabel = actualFinish ? (finishNames[actualFinish] || `#${actualFinish}`) : '';
                 const diffLabel = diff > 0 ? ` (+${diff})` : diff < 0 ? ` (${diff})` : diff === 0 ? ' (=)' : '';
                 return `
-                <div class="pr-card">
+                <div class="pr-card" data-owner="${team.owner}">
                     <div class="pr-card-header">
                         <div class="pr-rank${rankClass}">#${team.rank}</div>
                         <div class="pr-team-info">
-                            <div class="pr-team-name">${team.team}</div>
-                            <div class="pr-owner-name">${team.owner}</div>
+                            <div class="pr-team-name">${displayName(team.owner)}</div>
+                            <div class="pr-owner-name" title="Manager">${team.owner}</div>
                         </div>
                         ${actualFinish ? `<div class="pr-actual-finish" style="color:${finishColor}" data-tip-title="Actual Finish" data-tip="Preseason #${team.rank} → ${finishLabel}">${finishLabel}<span style="font-weight:700">${diffLabel}</span></div>` : ''}
                     </div>
@@ -6289,7 +6327,7 @@
                     <h3>Schedule-Adjusted Luck<span class="stat-tip">Regular-season-only analysis (weekly scoring data isn't comparable across playoff brackets). Compares your actual reg-season win% to your expected reg-season win% based on weekly scoring rank. Each week, you count how many opponents you would have beaten based on your average score that season. A positive number means you won more games than your scoring output deserved. Negative means your schedule cost you wins.</span></h3>
                     <table class="analytics-table">
                         <thead><tr><th>Owner</th><th style="text-align:right" title="Regular season only">Reg Win%</th><th style="text-align:right" title="Regular season only">Exp Reg Win%</th><th style="text-align:right">Luck</th></tr></thead>
-                        <tbody>${luckyTeams.map(t => `<tr><td>${t.owner}</td><td class="num">${t.actualWinPct}%</td><td class="num">${t.expectedWinPct}%</td><td class="num"><span class="insight-badge ${parseFloat(t.luck) > 5 ? 'positive' : parseFloat(t.luck) < -5 ? 'negative' : 'neutral'}">${parseFloat(t.luck) > 0 ? '+' : ''}${t.luck}%</span></td></tr>`).join('')}</tbody>
+                        <tbody>${luckyTeams.map(t => `<tr><td data-owner="${t.owner}" title="${t.owner}">${displayName(t.owner)}</td><td class="num">${t.actualWinPct}%</td><td class="num">${t.expectedWinPct}%</td><td class="num"><span class="insight-badge ${parseFloat(t.luck) > 5 ? 'positive' : parseFloat(t.luck) < -5 ? 'negative' : 'neutral'}">${parseFloat(t.luck) > 0 ? '+' : ''}${t.luck}%</span></td></tr>`).join('')}</tbody>
                     </table>
                 </div>
                 <div class="analytics-card">
@@ -6298,7 +6336,7 @@
                         <thead><tr><th>Owner</th><th style="text-align:right">Avg/Wk</th><th style="text-align:right">StDev</th><th style="text-align:right">CV%</th></tr></thead>
                         <tbody>${consistentTeams.map(t => {
                             const cv = ((parseFloat(t.stdev) / parseFloat(t.avgScore)) * 100).toFixed(1);
-                            return `<tr><td>${t.owner}</td><td class="num">${t.avgScore}</td><td class="num">${t.stdev}</td><td class="num"><span class="insight-badge ${parseFloat(cv) < 20 ? 'positive' : parseFloat(cv) > 25 ? 'negative' : 'neutral'}">${cv}%</span></td></tr>`;
+                            return `<tr><td data-owner="${t.owner}" title="${t.owner}">${displayName(t.owner)}</td><td class="num">${t.avgScore}</td><td class="num">${t.stdev}</td><td class="num"><span class="insight-badge ${parseFloat(cv) < 20 ? 'positive' : parseFloat(cv) > 25 ? 'negative' : 'neutral'}">${cv}%</span></td></tr>`;
                         }).join('')}</tbody>
                     </table>
                 </div>
@@ -6308,7 +6346,7 @@
                         <thead><tr><th>Owner</th><th style="text-align:right">PF</th><th style="text-align:right">Max PF</th><th style="text-align:right">Eff%</th></tr></thead>
                         <tbody>${efficientTeams.map(t => {
                             const d = allTimeData[t.owner];
-                            return `<tr><td>${t.owner}</td><td class="num">${parseFloat(d.total_fpts).toLocaleString()}</td><td class="num">${parseFloat(d.total_ppts).toLocaleString()}</td><td class="num"><span class="insight-badge ${parseFloat(t.mgrEff) > 84 ? 'positive' : parseFloat(t.mgrEff) < 81 ? 'negative' : 'neutral'}">${t.mgrEff}%</span></td></tr>`;
+                            return `<tr><td data-owner="${t.owner}" title="${t.owner}">${displayName(t.owner)}</td><td class="num">${parseFloat(d.total_fpts).toLocaleString()}</td><td class="num">${parseFloat(d.total_ppts).toLocaleString()}</td><td class="num"><span class="insight-badge ${parseFloat(t.mgrEff) > 84 ? 'positive' : parseFloat(t.mgrEff) < 81 ? 'negative' : 'neutral'}">${t.mgrEff}%</span></td></tr>`;
                         }).join('')}</tbody>
                     </table>
                 </div>
@@ -6316,7 +6354,7 @@
                     <h3>Year-Over-Year PF Change<span class="stat-tip">Percentage change in total Points For from one season to the next. Shows which teams are trending up or down in scoring output. Positive = improvement, negative = regression.</span></h3>
                     <table class="analytics-table">
                         <thead><tr><th>Owner</th><th style="text-align:right">'23\u2192'24</th><th style="text-align:right">'24\u2192'25</th></tr></thead>
-                        <tbody>${yoyData.map(t => `<tr><td>${t.owner}</td><td class="num"><span class="insight-badge ${parseFloat(t.change2324) > 5 ? 'positive' : parseFloat(t.change2324) < -5 ? 'negative' : 'neutral'}">${parseFloat(t.change2324) > 0 ? '+' : ''}${t.change2324}%</span></td><td class="num"><span class="insight-badge ${parseFloat(t.change2425) > 5 ? 'positive' : parseFloat(t.change2425) < -5 ? 'negative' : 'neutral'}">${parseFloat(t.change2425) > 0 ? '+' : ''}${t.change2425}%</span></td></tr>`).join('')}</tbody>
+                        <tbody>${yoyData.map(t => `<tr><td data-owner="${t.owner}" title="${t.owner}">${displayName(t.owner)}</td><td class="num"><span class="insight-badge ${parseFloat(t.change2324) > 5 ? 'positive' : parseFloat(t.change2324) < -5 ? 'negative' : 'neutral'}">${parseFloat(t.change2324) > 0 ? '+' : ''}${t.change2324}%</span></td><td class="num"><span class="insight-badge ${parseFloat(t.change2425) > 5 ? 'positive' : parseFloat(t.change2425) < -5 ? 'negative' : 'neutral'}">${parseFloat(t.change2425) > 0 ? '+' : ''}${t.change2425}%</span></td></tr>`).join('')}</tbody>
                     </table>
                 </div>
             `;
@@ -6333,7 +6371,7 @@
             luckChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: sorted.map(d => d.owner),
+                    labels: sorted.map(d => displayName(d.owner)),
                     datasets: [{
                         label: 'Luck Factor (%)',
                         data: sorted.map(d => parseFloat(d.luck)),
@@ -6826,9 +6864,9 @@
                 }
                 const totalKTC = rosterKTC + picksKTC;
 
-                return `<div class="roster-card">
+                return `<div class="roster-card" data-owner="${owner}">
                     <div class="roster-card-header">
-                        <div style="min-width:0;overflow:hidden;flex:1"><h3>${teamName}</h3><div style="font-size:0.8rem;color:var(--text-secondary)">${owner}</div></div>
+                        <div style="min-width:0;overflow:hidden;flex:1"><h3>${displayName(owner)}</h3><div style="font-size:0.8rem;color:var(--text-secondary)" title="Manager">${owner}</div></div>
                         <div style="display:flex;gap:0.6rem;align-items:center;">
                             <div class="ktc-total-badge" data-tip-title="KTC Breakdown" data-tip="Roster: ${rosterKTC.toLocaleString()} · Picks: ${picksKTC.toLocaleString()}"><div class="ktc-total-label">KTC Total</div><div class="ktc-total-value">${totalKTC.toLocaleString()}</div></div>
                             <div class="age-badge">Avg Age: ${r.avgAge}</div>
@@ -6885,7 +6923,8 @@
 
             // Tier from contender/rebuilder projection (works for any year)
             const tier = getPickProjection(originalOwner, year).tier;
-            const suffix = fromMatch ? ` (via ${fromMatch[1]})` : '';
+            // Show team name in (via …) when available
+            const suffix = fromMatch ? ` (via ${displayName(fromMatch[1])})` : '';
             return `${year} ${tier} R${round}${suffix}`;
         }
 
@@ -6910,7 +6949,7 @@
                 draftCapitalChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: ownersSorted.map(o => allTimeData[o]?.team_name || o),
+                        labels: ownersSorted.map(o => displayName(o)),
                         datasets: [{
                             label: 'KTC Draft Capital Value',
                             data: ownersSorted.map(o => ownerValues[o]),
@@ -6945,9 +6984,9 @@
 
                 const recObj = getRecord(owner, 'all');
                 const record = `${recObj.total.w}-${recObj.total.l}`;
-                return `<div class="dc-card">
+                return `<div class="dc-card" data-owner="${owner}">
                     <div class="dc-card-header">
-                        <div><h3>#${idx+1} ${teamName}</h3><div style="font-size:0.8rem;color:var(--text-secondary)">${owner}</div><div class="record-cell" style="font-size:0.7rem;color:var(--text-secondary);opacity:0.6;margin-top:0.15rem" title="${recObj.tooltip}">${record} career</div></div>
+                        <div><h3>#${idx+1} ${displayName(owner)}</h3><div style="font-size:0.8rem;color:var(--text-secondary)" title="Manager">${owner}</div><div class="record-cell" style="font-size:0.7rem;color:var(--text-secondary);opacity:0.6;margin-top:0.15rem" title="${recObj.tooltip}">${record} career</div></div>
                         <div class="dc-value">${totalVal.toLocaleString()}</div>
                     </div>
                     <div class="dc-meta">
@@ -7232,10 +7271,10 @@
                     ${Object.entries(ownerGPA).sort((a,b) => parseFloat(b[1].gpa)-parseFloat(a[1].gpa)).map(([owner, data]) => {
                         const glClass = 'gl-' + data.letter.replace('+','plus').replace('-','minus');
                         return `
-                        <div class="db-owner-grade">
+                        <div class="db-owner-grade" data-owner="${owner}">
                             <div class="db-grade-letter-big ${glClass}">${data.letter}</div>
                             <div class="db-grade-info">
-                                <div class="db-owner-name">${owner}</div>
+                                <div class="db-owner-name" title="${owner}">${displayName(owner)}</div>
                                 <div class="db-grade-gpa db-gpa-wrap">
                                     GPA ${data.gpa}
                                     <span class="db-gpa-icon">?</span>
@@ -7247,16 +7286,17 @@
                 </div>
             `;
 
-            // Column headers — one per slot showing the owner name
+            // Column headers — one per slot showing the team name (truncated if long)
             slots.forEach(slot => {
                 const header = document.createElement('div');
                 header.className = 'db-col-header';
                 const ownerName = slotOwnerMap[slot] || '';
-                const parts = ownerName.split(/\s+/);
-                header.textContent = parts.length > 1
-                    ? `${parts[0]} ${parts[parts.length-1].charAt(0)}.`
-                    : ownerName;
-                header.title = ownerName;
+                const team = displayName(ownerName);
+                // Truncate long team names so the grid stays readable
+                const display = team.length > 14 ? team.slice(0, 12) + '…' : team;
+                header.textContent = display;
+                header.title = team !== ownerName ? `${team} (${ownerName})` : ownerName;
+                if (ownerName) header.dataset.owner = ownerName;
                 gridContainer.appendChild(header);
             });
 
@@ -7300,7 +7340,8 @@
 
             const tile = document.createElement('div');
             tile.className = `db-tile pos-${pos}`;
-            tile.title = `${playerName} · ${pos}${nflTeam ? ' · ' + nflTeam : ''}\n${owner}  —  Pick ${round}.${String(slot).padStart(2,'0')}  ·  Grade ${grade}`;
+            const teamLabel = displayName(owner);
+            tile.title = `${playerName} · ${pos}${nflTeam ? ' · ' + nflTeam : ''}\n${teamLabel}${teamLabel !== owner ? ' (' + owner + ')' : ''}  —  Pick ${round}.${String(slot).padStart(2,'0')}  ·  Grade ${grade}`;
 
             const gradeClass = 'grade-' + grade.replace('+','plus').replace('-','minus');
             const teamText = nflTeam && nflTeam !== 'FA' && nflTeam !== '' ? nflTeam : '';
@@ -7318,7 +7359,7 @@
                     <span class="db-pos-pill pos-${pos}">${pos}</span>
                     ${teamText ? `<span class="db-nfl-team">${teamText}</span>` : ''}
                 </div>
-                <div class="db-tile-owner-tag">${owner}</div>
+                <div class="db-tile-owner-tag" data-owner="${owner}" title="${owner}">${displayName(owner)}</div>
             `;
             return tile;
         }
@@ -7534,7 +7575,7 @@
                     const isChamp = finish.includes('Champion');
                     const isPlayoff = finish.length > 0;
                     const rowCls = isChamp ? 'champ-row' : isPlayoff ? 'playoff-row' : '';
-                    standingsHtml += `<tr class="${rowCls}"><td class="rank-col">${i+1}</td><td class="owner-col" onclick="openTeamProfile('${s.owner}')">${s.owner}</td><td class="record-col record-cell" title="${s.tooltip || ''}">${s.wins}-${s.losses}</td><td class="pts-col">${s.fpts.toFixed(1)}</td><td style="font-size:0.78rem;color:${isChamp?'var(--accent-gold)':isPlayoff?'var(--accent-teal)':'var(--text-secondary)'}">${finish}</td></tr>`;
+                    standingsHtml += `<tr class="${rowCls}"><td class="rank-col">${i+1}</td><td class="owner-col" onclick="openTeamProfile('${s.owner}')" title="${s.owner}">${displayName(s.owner)}</td><td class="record-col record-cell" title="${s.tooltip || ''}">${s.wins}-${s.losses}</td><td class="pts-col">${s.fpts.toFixed(1)}</td><td style="font-size:0.78rem;color:${isChamp?'var(--accent-gold)':isPlayoff?'var(--accent-teal)':'var(--text-secondary)'}">${finish}</td></tr>`;
                 });
                 standingsHtml += '</tbody></table>';
 
@@ -7819,7 +7860,7 @@
                 return `<div class="tp-trade-card">
                     <div class="tp-trade-header">
                         <span class="tp-trade-date">${year} &middot; Week ${week}</span>
-                        <span class="tp-trade-partner" style="cursor:pointer" onclick="openTeamProfile('${partner}')">${partner}</span>
+                        <span class="tp-trade-partner" style="cursor:pointer" onclick="openTeamProfile('${partner}')" title="${partner}">${displayName(partner)}</span>
                     </div>
                     <div class="tp-trade-sides">
                         <div class="tp-trade-side"><div class="side-label">Received</div><div class="side-items">${mySide.got.join('<br>')}</div></div>
@@ -7855,7 +7896,7 @@
             }).map(opp => {
                 const r = ownerH2H[opp];
                 const cls = r.wins > r.losses ? 'w' : r.wins < r.losses ? 'l' : 'e';
-                return `<div class="tp-h2h-item" onclick="openTeamProfile('${opp}')"><span class="tp-h2h-name">${opp}</span><span class="tp-h2h-rec ${cls}">${r.wins}-${r.losses}</span></div>`;
+                return `<div class="tp-h2h-item" onclick="openTeamProfile('${opp}')" title="${opp}"><span class="tp-h2h-name">${displayName(opp)}</span><span class="tp-h2h-rec ${cls}">${r.wins}-${r.losses}</span></div>`;
             }).join('');
 
             // Build draft capital
@@ -7886,8 +7927,8 @@
                 <div class="tp-hero">
                     <div class="tp-hero-avatar">${honors.some(h => h.includes('Champion')) ? '🏆' : '🏈'}</div>
                     <div class="tp-hero-info">
-                        <h2>${owner}</h2>
-                        <div class="tp-team-name">${data.team_name}</div>
+                        <h2>${displayName(owner)}</h2>
+                        <div class="tp-team-name" title="Manager">${owner}${(data.co_owners && data.co_owners.length) ? ' &amp; ' + data.co_owners.join(', ') : ''}</div>
                         ${honors.length ? '<div class="tp-hero-badges">' + honors.map(h => `<span class="tp-hero-badge">${h}</span>`).join('') + '</div>' : ''}
                     </div>
                     <div class="tp-hero-stats">
@@ -8013,13 +8054,18 @@
             if (e.key === 'Escape') document.getElementById('teamProfileModal').classList.remove('open');
         });
 
-        // Make owner names in standings table clickable — observe for re-sorts
+        // Make team names in standings table clickable — observe for re-sorts.
+        // Click handler uses the data-owner attr on the parent <td>, since the
+        // visible text is now the team display name (which would not resolve in openTeamProfile).
         new MutationObserver(() => {
             document.querySelectorAll('#standingsBody .owner-name').forEach(el => {
                 if (!el.classList.contains('manager-link')) {
+                    const td = el.closest('[data-owner]');
+                    const ownerKey = td ? td.dataset.owner : ownerByDisplayName(el.textContent.trim());
+                    if (!ownerKey) return;
                     el.classList.add('manager-link');
-                    el.title = "View " + el.textContent.trim() + "'s full profile";
-                    el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(el.textContent.trim()); });
+                    el.title = "View " + ownerKey + "'s full profile";
+                    el.addEventListener('click', e => { e.stopPropagation(); openTeamProfile(ownerKey); });
                 }
             });
         }).observe(document.getElementById('standingsBody'), { childList: true });
@@ -8039,7 +8085,8 @@
                 const winPct = sLatest ? parseFloat((sLatest.wins / (sLatest.wins + sLatest.losses) * 100).toFixed(1)) : 0;
                 const pptsLatest = sLatest ? parseFloat(sLatest.ppts) : 0;
                 return {
-                    label: owner,
+                    label: displayName(owner),  // team name shown on chart
+                    owner,                       // keep manager handle for click handler
                     data: [{ x: pptsLatest, y: winPct }],
                     backgroundColor: palette[i % palette.length] + 'bb',
                     borderColor: palette[i % palette.length],
@@ -8076,8 +8123,10 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: { callbacks: { label(ctx) {
-                            const o = ctx.dataset.label, d = allTimeData[o];
-                            return [o + ' — ' + d.team_name, CONFIG.CURRENT_SEASON + ' Win %: ' + ctx.parsed.y + '%', CONFIG.CURRENT_SEASON + ' Max PF: ' + ctx.parsed.x.toFixed(0)];
+                            const owner = ctx.dataset.owner;
+                            const team = displayName(owner);
+                            const heading = team !== owner ? `${team} (${owner})` : owner;
+                            return [heading, CONFIG.CURRENT_SEASON + ' Win %: ' + ctx.parsed.y + '%', CONFIG.CURRENT_SEASON + ' Max PF: ' + ctx.parsed.x.toFixed(0)];
                         }}}
                     },
                     scales: {
@@ -8085,7 +8134,7 @@
                         y: { title: { display: true, text: CONFIG.CURRENT_SEASON + ' Season Win %', color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b949e', font: { size: 10 }, callback: v => v + '%' }, min: 0, max: 100 }
                     },
                     onClick(e, els) {
-                        if (els.length) openTeamProfile(contenderChartInst.data.datasets[els[0].datasetIndex].label);
+                        if (els.length) openTeamProfile(contenderChartInst.data.datasets[els[0].datasetIndex].owner);
                     }
                 }
             });
@@ -8115,7 +8164,8 @@
             root.querySelectorAll('[data-owner]').forEach(el => wireOneManagerLink(el, el.dataset.owner));
         }
 
-        // Selectors whose textContent is an owner name (possibly with prefixes to strip)
+        // Selectors whose textContent is a display label that may map to an owner.
+        // Resolved through ownerByDisplayName so team names AND manager handles both work.
         const MANAGER_LINK_SELECTORS = [
             '.h2h-header-cell', '.h2h-label', '.roster-owner-name',
             '.trade-team-name', '.pr-owner', '.dc-owner-name'
@@ -8126,10 +8176,14 @@
         const mainEl = document.querySelector('main');
         if (mainEl) {
             const globalObserver = new MutationObserver(() => {
-                // Standard selectors: textContent === ownerName
+                // First pass: anything with [data-owner] auto-wires (team names + manager handles both)
+                wireManagerLinks(document);
+                // Legacy text-match fallback — resolve via display-name lookup so team-name
+                // text still maps back to the canonical owner key.
                 document.querySelectorAll(MANAGER_LINK_SELECTOR_STR).forEach(el => {
                     const name = el.textContent.trim();
-                    if (allOwnerNames.includes(name)) wireOneManagerLink(el, name);
+                    const owner = ownerByDisplayName(name);
+                    if (owner) wireOneManagerLink(el, owner);
                 });
                 // Playoff bracket names need prefix/suffix stripping
                 document.querySelectorAll('.pm-team span').forEach(el => {
