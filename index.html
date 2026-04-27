@@ -3970,6 +3970,14 @@
             CURRENT_SEASON: 2025,
             TOTAL_TEAMS: 12,
             SLEEPER_USERNAME: 'nendy',
+            // Sleeper display_name → local owner key. Use when a manager renamed on Sleeper
+            // (or in this site's data) but historical seasons still report the old display_name.
+            // Without this mapping, PF data accumulates under the Sleeper name and the roster
+            // tab — keyed by the local name — shows an empty PF column for that team.
+            SLEEPER_OWNER_ALIASES: {
+                'nendy': 'pedick',           // renamed locally in commit 6384c16; Sleeper still returns 'nendy'
+                'bradysballz': 'bradysballzfdf' // older Sleeper display name; merge into current
+            },
             CORS_PROXY: 'https://corsproxy.io/?',                 // primary proxy (backwards-compat)
             CORS_PROXY_FALLBACKS: [                                 // tried in order if primary fails
                 'https://corsproxy.io/?',
@@ -6563,7 +6571,13 @@
                     const rosterToOwner = {};
                     rosters.forEach(r => {
                         const user = users.find(u => u.user_id === r.owner_id);
-                        if (user) rosterToOwner[r.roster_id] = user.display_name;
+                        if (user) {
+                            // Translate Sleeper display_name → local owner key when one is mapped.
+                            // E.g. Sleeper still has 'nendy' for this user; locally we key by 'pedick'.
+                            const sleeperName = user.display_name;
+                            const localKey = (CONFIG.SLEEPER_OWNER_ALIASES && CONFIG.SLEEPER_OWNER_ALIASES[sleeperName]) || sleeperName;
+                            rosterToOwner[r.roster_id] = localKey;
+                        }
                     });
 
                     // Determine weeks to fetch: regular season + playoffs
