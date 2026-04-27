@@ -4272,7 +4272,11 @@
         // ═══════════════════════════════════════════
         //  DYNAMIC OVERVIEW STATS (computed from data)
         // ═══════════════════════════════════════════
-        (function populateOverviewStats() {
+        // Deferred via setTimeout(0) so transactionData (declared ~440 lines below)
+        // is fully initialized before this runs. Without the defer, this IIFE hits
+        // TDZ on transactionData and the entire <script> halts — taking Power
+        // Rankings, Draft Board, Rosters, etc. down with it.
+        setTimeout(function populateOverviewStats() {
             const owners = Object.keys(allTimeData);
             const numSeasons = CONFIG.SEASONS.length;
             const matchupsPerWeek = CONFIG.TOTAL_TEAMS / 2;
@@ -4326,7 +4330,7 @@
                 setCard('overviewStatTrader', 'Most Active Trader', topTrader[0],
                     topTrader[1] + ' trades across ' + numSeasons + ' seasons');
             }
-        })();
+        }, 0);
 
         // STANDINGS TABLE — Sortable
         let currentSortCol = 'win_pct';
