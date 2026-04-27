@@ -4026,7 +4026,13 @@
                 ROUND4_MULTIPLIER: 1.22,
                 TE_LATE_PENALTY:   1.35,
                 KTC_RANK_SPAN: 350,
-                STARTUP_RANK_SPAN: 300
+                STARTUP_RANK_SPAN: 300,
+                // 1QB correction: the startup2023Ranks table was sourced from a Superflex-flavored
+                // KTC snapshot (Mahomes #1, Allen #2). In a 1QB league, top QBs sit closer to
+                // ~#25-30. Adding this constant to a QB's effectiveRank shifts the grade math
+                // toward 1QB reality without rewriting the rank table. Tune up to penalize QBs
+                // harder, down to ease off.
+                STARTUP_QB_RANK_BUMP: 15
             }
         };
 
@@ -6981,8 +6987,9 @@
         }
 
         // Startup grade: uses min(2023 rank, current KTC rank) to avoid penalizing
-        // aging players while still rewarding prescient sleeper picks
-        function calculateGradeStartup(playerName, overallPickNum, totalPicks) {
+        // aging players while still rewarding prescient sleeper picks.
+        // QBs get an additive rank bump (1QB correction) since the 2023 rank table is SF-flavored.
+        function calculateGradeStartup(playerName, overallPickNum, totalPicks, position) {
             const currentRank = getPlayerKTCRank(playerName);
             const rank2023 = getStartup2023Rank(playerName);
             let effectiveRank;
@@ -6998,6 +7005,10 @@
                 if (pct <= 0.25) return 'C';
                 if (pct <= 0.5) return 'C-';
                 return 'D+';
+            }
+            // 1QB correction: shift QB ranks toward where they'd sit in a 1QB market.
+            if (position === 'QB' && CONFIG.DRAFT_GRADE.STARTUP_QB_RANK_BUMP) {
+                effectiveRank = effectiveRank + CONFIG.DRAFT_GRADE.STARTUP_QB_RANK_BUMP;
             }
             const expectedRank = Math.max(10, (overallPickNum / totalPicks) * CONFIG.DRAFT_GRADE.STARTUP_RANK_SPAN);
             const ratio = effectiveRank / expectedRank;
@@ -7018,9 +7029,9 @@
 
         // KTC-only grade: compare player dynasty rank vs expected rank at pick position
         function calculateGradeKTC(playerName, overallPickNum, totalPicks, position, draftType) {
-            // Startup uses separate grading with 2023 context
+            // Startup uses separate grading with 2023 context (position-aware for QB 1QB correction)
             if (draftType === 'startup2023') {
-                return calculateGradeStartup(playerName, overallPickNum, totalPicks);
+                return calculateGradeStartup(playerName, overallPickNum, totalPicks, position);
             }
             const ktcRank = getPlayerKTCRank(playerName);
             if (!ktcRank || ktcRank === '-') {

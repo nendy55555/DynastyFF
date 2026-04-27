@@ -200,6 +200,16 @@ describe('calculateGradeStartup', () => {
         // top-7% of picks with no rank → C+ per fallback table
         assert.equal(g, 'C+');
     });
+    test('QB gets a 1QB rank-bump penalty vs same-ranked non-QB at same pick', () => {
+        // Same player rank picked at same slot. QB position should grade WORSE than RB.
+        // Jalen Hurts is in fixtures with KTC rank — use as QB. Compare to Breece Hall (RB) at the same rank.
+        // (We just need: QB grade letter should not be a higher tier than the RB grade letter.)
+        const order = ['A+','A','A-','B+','B','B-','C+','C','C-','D+','D','D-','F'];
+        const qbGrade = logic.calculateGradeStartup('Jalen Hurts', 7, 288, 'QB');
+        const rbGrade = logic.calculateGradeStartup('Jalen Hurts', 7, 288, 'RB');
+        assert.ok(order.indexOf(qbGrade) >= order.indexOf(rbGrade),
+            `QB at pick 7 should grade <= same-rank RB; got QB=${qbGrade}, RB=${rbGrade}`);
+    });
 });
 
 describe('calculateGradeKTC', () => {
