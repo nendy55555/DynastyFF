@@ -3190,8 +3190,7 @@
                 <div class="nav-group">
                     <span class="nav-group-label">The Data</span>
                     <div class="nav-group-tabs">
-                        <button class="nav-tab" data-tab="trends">Trends</button>
-                        <button class="nav-tab" data-tab="analytics">Analytics</button>
+                        <button class="nav-tab" data-tab="trends">Trends &amp; Analytics</button>
                         <button class="nav-tab" data-tab="draftcapital">Draft Capital</button>
                         <button class="nav-tab" data-tab="leaguerules">League Rules</button>
                     </div>
@@ -3393,9 +3392,9 @@
             </div>
         </div>
 
-        <!-- TRENDS TAB -->
+        <!-- TRENDS & ANALYTICS TAB -->
         <div id="trends" class="tab-content">
-            <h2 class="section-header">Trends & Analytics</h2>
+            <h2 class="section-header">Trends</h2>
 
             <div class="chart-grid">
                 <div class="chart-container">
@@ -3444,6 +3443,28 @@
                     <div class="chart-content">
                         <canvas id="maxPfChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <h2 class="section-header" style="margin-top: 3rem;">Advanced Analytics</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">Quantitative analysis derived from 3 seasons of league data. Metrics include luck factor, consistency scores, and predictive indicators.</p>
+            <div class="analytics-grid" id="analyticsGrid"></div>
+            <div style="margin-top: 2rem;">
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="luckChart"></canvas>
+                </div>
+            </div>
+            <div class="quadrant-wrap">
+                <h3>Contender / Rebuilder Quadrant</h3>
+                <p>Current performance (2025 win %) vs. roster talent (Max PF — the ceiling of what each team could have scored if lineups were set perfectly). Teams in the top-right are contenders now. Bottom-right are underperforming their talent. Bottom-left are rebuilding.</p>
+                <div class="quadrant-chart-box">
+                    <div class="quadrant-labels">
+                        <div class="quadrant-lbl tl">Over-Performing</div>
+                        <div class="quadrant-lbl tr">Contenders</div>
+                        <div class="quadrant-lbl bl">Rebuilding</div>
+                        <div class="quadrant-lbl br">Underperforming</div>
+                    </div>
+                    <canvas id="contenderChart" style="position:relative;z-index:2;"></canvas>
                 </div>
             </div>
         </div>
@@ -3688,30 +3709,6 @@
             </div>
         </div>
 
-        <!-- ANALYTICS TAB -->
-        <div id="analytics" class="tab-content">
-            <h2 class="section-header">Advanced Analytics</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">Quantitative analysis derived from 3 seasons of league data. Metrics include luck factor, consistency scores, and predictive indicators.</p>
-            <div class="analytics-grid" id="analyticsGrid"></div>
-            <div style="margin-top: 2rem;">
-                <div class="chart-container" style="height: 400px;">
-                    <canvas id="luckChart"></canvas>
-                </div>
-            </div>
-            <div class="quadrant-wrap">
-                <h3>Contender / Rebuilder Quadrant</h3>
-                <p>Current performance (2025 win %) vs. roster talent (Max PF — the ceiling of what each team could have scored if lineups were set perfectly). Teams in the top-right are contenders now. Bottom-right are underperforming their talent. Bottom-left are rebuilding.</p>
-                <div class="quadrant-chart-box">
-                    <div class="quadrant-labels">
-                        <div class="quadrant-lbl tl">Over-Performing</div>
-                        <div class="quadrant-lbl tr">Contenders</div>
-                        <div class="quadrant-lbl bl">Rebuilding</div>
-                        <div class="quadrant-lbl br">Underperforming</div>
-                    </div>
-                    <canvas id="contenderChart" style="position:relative;z-index:2;"></canvas>
-                </div>
-            </div>
-        </div>
 
         <!-- ROSTERS TAB -->
         <div id="rosters" class="tab-content">
@@ -4159,10 +4156,10 @@
                     if (mgrEffChart) mgrEffChart.resize();
                     if (yoyChangeChart) yoyChangeChart.resize();
                     if (maxPfChart) maxPfChart.resize();
-                }
-                if (tabName === 'analytics' && !window._contenderChartDone) {
-                    initContenderChart();
-                    window._contenderChartDone = true;
+                    if (!window._contenderChartDone) {
+                        initContenderChart();
+                        window._contenderChartDone = true;
+                    }
                 }
             }, 100);
         }
@@ -4178,7 +4175,8 @@
 
         // Deep link: activate tab from URL hash on page load
         (function() {
-            const hash = window.location.hash.replace('#', '');
+            let hash = window.location.hash.replace('#', '');
+            if (hash === 'analytics') hash = 'trends'; // legacy redirect
             if (hash && hash.startsWith('profile-')) {
                 const owner = hash.replace('profile-', '');
                 if (allTimeData[owner]) { setTimeout(() => openTeamProfile(owner), 100); return; }
@@ -4188,7 +4186,8 @@
 
         // Back/forward: switch tab without pushing new history
         window.addEventListener('popstate', function() {
-            const hash = window.location.hash.replace('#', '');
+            let hash = window.location.hash.replace('#', '');
+            if (hash === 'analytics') hash = 'trends'; // legacy redirect
             if (hash && hash.startsWith('profile-')) {
                 const owner = hash.replace('profile-', '');
                 if (allTimeData[owner]) { openTeamProfile(owner); return; }
@@ -5217,7 +5216,8 @@
         function initH2HDetail() {
             const select = document.getElementById('h2hTeamSelect');
             const owners = Object.keys(allTimeData).sort((a, b) => {
-                return parseFloat(allTimeData[b].win_pct) - parseFloat(allTimeData[a].win_pct);
+                // Sort by canonical win pct (regular + meaningful playoffs) so dropdown matches every other tab
+                return getRecord(b, 'all').winPct - getRecord(a, 'all').winPct;
             });
 
             owners.forEach(owner => {
@@ -6151,9 +6151,9 @@
 
             grid.innerHTML = `
                 <div class="analytics-card">
-                    <h3>Schedule-Adjusted Luck<span class="stat-tip">Compares your actual win% to your expected win% based on weekly scoring rank. Each week, you count how many opponents you would have beaten based on your average score that season. A positive number means you won more games than your scoring output deserved. Negative means your schedule cost you wins.</span></h3>
+                    <h3>Schedule-Adjusted Luck<span class="stat-tip">Regular-season-only analysis (weekly scoring data isn't comparable across playoff brackets). Compares your actual reg-season win% to your expected reg-season win% based on weekly scoring rank. Each week, you count how many opponents you would have beaten based on your average score that season. A positive number means you won more games than your scoring output deserved. Negative means your schedule cost you wins.</span></h3>
                     <table class="analytics-table">
-                        <thead><tr><th>Owner</th><th style="text-align:right">Win%</th><th style="text-align:right">Exp Win%</th><th style="text-align:right">Luck</th></tr></thead>
+                        <thead><tr><th>Owner</th><th style="text-align:right" title="Regular season only">Reg Win%</th><th style="text-align:right" title="Regular season only">Exp Reg Win%</th><th style="text-align:right">Luck</th></tr></thead>
                         <tbody>${luckyTeams.map(t => `<tr><td>${t.owner}</td><td class="num">${t.actualWinPct}%</td><td class="num">${t.expectedWinPct}%</td><td class="num"><span class="insight-badge ${parseFloat(t.luck) > 5 ? 'positive' : parseFloat(t.luck) < -5 ? 'negative' : 'neutral'}">${parseFloat(t.luck) > 0 ? '+' : ''}${t.luck}%</span></td></tr>`).join('')}</tbody>
                     </table>
                 </div>
@@ -6209,7 +6209,7 @@
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-                    plugins: { legend: { display: false }, title: { display: true, text: 'Schedule-Adjusted Luck: Actual Win% minus Expected Win% (based on scoring rank)', color: colors.textColor, font: { size: 14 } } },
+                    plugins: { legend: { display: false }, title: { display: true, text: 'Schedule-Adjusted Luck: Actual Reg-Season Win% minus Expected Reg-Season Win%', color: colors.textColor, font: { size: 14 } } },
                     scales: { x: { ticks: { color: colors.textSecondary, callback: v => v + '%' }, grid: { color: colors.gridColor } }, y: { ticks: { color: colors.textSecondary }, grid: { color: 'transparent' } } }
                 }
             });
@@ -6596,7 +6596,12 @@
         function initRosters() {
             const grid = document.getElementById('rosterGrid');
             if (!grid) return;
-            const ownersSorted = Object.keys(teamRosters).sort((a,b) => parseFloat(allTimeData[b]?.win_pct || 0) - parseFloat(allTimeData[a]?.win_pct || 0));
+            // Sort by canonical win pct so the Rosters grid matches every other tab
+            const ownersSorted = Object.keys(teamRosters).sort((a,b) => {
+                const wa = allTimeData[a] ? getRecord(a, 'all').winPct : 0;
+                const wb = allTimeData[b] ? getRecord(b, 'all').winPct : 0;
+                return wb - wa;
+            });
             grid.innerHTML = ownersSorted.map(owner => {
                 const r = teamRosters[owner];
                 const teamName = allTimeData[owner]?.team_name || owner;
@@ -8034,14 +8039,7 @@
                     <span class="mobile-more-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     </span>
-                    <span class="mobile-more-label">Trends</span>
-                    <span class="mobile-more-chevron">›</span>
-                </li>
-                <li class="mobile-more-item" data-more-tab="analytics">
-                    <span class="mobile-more-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    </span>
-                    <span class="mobile-more-label">Analytics</span>
+                    <span class="mobile-more-label">Trends &amp; Analytics</span>
                     <span class="mobile-more-chevron">›</span>
                 </li>
                 <li class="mobile-more-item" data-more-tab="draftcapital">
@@ -8091,6 +8089,10 @@
                     if (window.mgrEffChart) window.mgrEffChart.resize();
                     if (window.yoyChangeChart) window.yoyChangeChart.resize();
                     if (window.maxPfChart) window.maxPfChart.resize();
+                    if (!window._contenderChartDone && typeof initContenderChart === 'function') {
+                        initContenderChart();
+                        window._contenderChartDone = true;
+                    }
                 }
             }, 120);
 
