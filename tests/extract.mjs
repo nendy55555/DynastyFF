@@ -41,6 +41,7 @@ const TARGETS = [
     'getPlayerKTCRank',
     'getPlayerFPRank',
     'getStartup2023Rank',
+    'getPickProjection',
     'getAssetKTC',
     'resolvePickOriginalOwner',
     'buildPickOwnershipMap',
@@ -157,6 +158,7 @@ let pickProjection2026 = {};
 let transactionData = { trades: [] };
 let nameAliases = {};
 let startup2023Ranks = {};
+let allTimeData = {};
 // No-op DOM stubs used by some functions
 const console = { warn(){}, error(){}, log(){} };
 
@@ -175,6 +177,7 @@ module.exports = {
     set transactionData(v) { transactionData = v; }, get transactionData() { return transactionData; },
     set nameAliases(v) { nameAliases = v; }, get nameAliases() { return nameAliases; },
     set startup2023Ranks(v) { startup2023Ranks = v; }, get startup2023Ranks() { return startup2023Ranks; },
+    set allTimeData(v) { allTimeData = v; }, get allTimeData() { return allTimeData; },
     CONFIG,
 ${TARGETS.map(n => `    ${n},`).join('\n')}
 };

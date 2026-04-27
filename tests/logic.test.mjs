@@ -189,6 +189,35 @@ describe('gradeTrade', () => {
     });
 });
 
+describe('getPickProjection', () => {
+    // Tiny league fixture mirroring the contender/rebuilder shape: contender, mid, tanker.
+    const altimeFixture = {
+        contender:    { seasons: { '2025': { wins: 11, losses: 3, ppts: 2090 } } },
+        midTeam:      { seasons: { '2025': { wins: 7,  losses: 7, ppts: 1700 } } },
+        rebuilder:    { seasons: { '2025': { wins: 1,  losses: 13, ppts: 1230 } } }
+    };
+    test('rebuilder gets early pick, contender gets late pick (2027)', () => {
+        logic.allTimeData = altimeFixture;
+        const reb = logic.getPickProjection('rebuilder', '2027');
+        const con = logic.getPickProjection('contender', '2027');
+        assert.ok(reb.pick < con.pick, `rebuilder slot (${reb.pick}) should be earlier than contender slot (${con.pick})`);
+        assert.equal(reb.pick, 1, 'tanker should land at slot 1');
+        assert.equal(con.pick, 3, 'contender should land last in this 3-team fixture');
+    });
+    test('returns Mid fallback for unknown owner', () => {
+        logic.allTimeData = altimeFixture;
+        const r = logic.getPickProjection('NotAnOwner', '2027');
+        assert.equal(r.tier, 'Mid');
+        assert.equal(r.pick, 6);
+    });
+    test('2026 prefers static pickProjection2026 table when present', () => {
+        logic.allTimeData = altimeFixture;
+        logic.pickProjection2026 = { contender: { pick: 99, tier: 'Late', record: '11-3' } };
+        const r = logic.getPickProjection('contender', '2026');
+        assert.equal(r.pick, 99, 'should return the static table entry, not a derived slot');
+    });
+});
+
 describe('calculateGradeStartup', () => {
     test('known top-tier player picked late = value grade', () => {
         // Bijan Robinson KTC rank 1, picked #50 in a 150-pick draft
