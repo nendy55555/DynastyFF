@@ -6445,7 +6445,8 @@
                 initRosters();
 
                 // 4. Persist latest snapshot to localStorage so the next page load starts with fresh data
-                //    even when proxies are down. Cache keys: dff_ktc_v1, dff_fp_v1.                try {
+                //    even when proxies are down. Cache keys: dff_ktc_v2, dff_fp_v2.
+                try {
                     // Save RAW values to cache (before applying QB discount), so subsequent
                     // boots can re-apply the discount without compounding it.
                     localStorage.setItem('dff_ktc_v2', JSON.stringify({ t: Date.now(), d: ktcValues }));
@@ -7354,7 +7355,7 @@
         //  TEAM PROFILE MODAL
         // ═══════════════════════════════════════════
         const championshipResults = {
-            nendy:         { '2023': '🏆 Champion', '2024': '🥈 Runner-Up' },
+            pedick:         { '2023': '🏆 Champion', '2024': '🥈 Runner-Up' },
             MrEton:        { '2024': '🏆 Champion' },
             doyersbeast:   { '2025': '🏆 Champion' },
             andrewmcorral: { '2023': '🥈 Runner-Up', '2024': '🥉 3rd Place', '2025': '🥉 3rd Place' },

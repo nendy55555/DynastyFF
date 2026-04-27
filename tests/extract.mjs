@@ -105,12 +105,26 @@ function main() {
     const configMatch = js.match(/const\s+CONFIG\s*=\s*\{/);
     if (!configMatch) throw new Error('CONFIG block not found');
     const configStart = configMatch.index;
-    // brace count
+    // brace count — must skip strings AND comments. A CONFIG comment like
+    // `KTC's "1QB"` would otherwise enter "string mode" on a stray apostrophe
+    // and over-run far past the real close brace.
     let i = js.indexOf('{', configStart);
     let depth = 1;
     i++;
     while (i < js.length && depth > 0) {
         const ch = js[i];
+        // Skip line comments
+        if (ch === '/' && js[i + 1] === '/') {
+            while (i < js.length && js[i] !== '\n') i++;
+            continue;
+        }
+        // Skip block comments
+        if (ch === '/' && js[i + 1] === '*') {
+            i += 2;
+            while (i < js.length - 1 && !(js[i] === '*' && js[i + 1] === '/')) i++;
+            i += 2;
+            continue;
+        }
         if (ch === '"' || ch === "'" || ch === '`') {
             const q = ch; i++;
             while (i < js.length && js[i] !== q) { if (js[i] === '\\') i += 2; else i++; }
