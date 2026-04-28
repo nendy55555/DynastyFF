@@ -6086,14 +6086,23 @@
             return { pick, tier };
         }
 
-        // 2026 pick projection based on 2025 season record (worst record = earliest pick)
+        // 2026 pick projection — locked from the official draft order posted on Sleeper.
+        // The lottery (and any record tie-breakers) reshuffled the simple worst-record sort:
+        // JustinG66 jumped from #5 expected to #1, grffnboss (1-13) dropped to #3, etc.
+        // Record column reflects 2025 finish, not pick position.
         const pickProjection2026 = {
-            "grffnboss":{"pick":1,"tier":"Early","record":"1-13"},"MrEton":{"pick":2,"tier":"Early","record":"4-10"},
-            "shaqdeezy":{"pick":3,"tier":"Early","record":"5-9"},"SweetSweet":{"pick":4,"tier":"Early","record":"6-8"},
-            "JustinG66":{"pick":5,"tier":"Mid","record":"6-8"},"DeezNutz02":{"pick":6,"tier":"Mid","record":"6-8"},
-            "bradysballzfdf":{"pick":7,"tier":"Mid","record":"6-8"},"jakeschwartz":{"pick":8,"tier":"Mid","record":"7-7"},
-            "doyersbeast":{"pick":9,"tier":"Late","record":"10-4"},"pedick":{"pick":10,"tier":"Late","record":"11-3"},
-            "andrewmcorral":{"pick":11,"tier":"Late","record":"11-3"},"nsbarbarino":{"pick":12,"tier":"Late","record":"11-3"}
+            "JustinG66":     {"pick":1, "tier":"Early","record":"6-8"},
+            "SweetSweet":    {"pick":2, "tier":"Early","record":"6-8"},
+            "grffnboss":     {"pick":3, "tier":"Early","record":"1-13"},
+            "MrEton":        {"pick":4, "tier":"Early","record":"4-10"},
+            "bradysballzfdf":{"pick":5, "tier":"Mid",  "record":"3-11"},
+            "shaqdeezy":     {"pick":6, "tier":"Mid",  "record":"5-9"},
+            "DeezNutz02":    {"pick":7, "tier":"Mid",  "record":"9-5"},
+            "nsbarbarino":   {"pick":8, "tier":"Mid",  "record":"11-3"},
+            "pedick":        {"pick":9, "tier":"Late", "record":"11-3"},
+            "andrewmcorral": {"pick":10,"tier":"Late", "record":"11-3"},
+            "jakeschwartz":  {"pick":11,"tier":"Late", "record":"7-7"},
+            "doyersbeast":   {"pick":12,"tier":"Late", "record":"10-4"}
         };
 
         // Corrected picks from Sleeper API (audited March 2026)
