@@ -6243,10 +6243,10 @@
                 const finishLabel = actualFinish ? (finishNames[actualFinish] || `#${actualFinish}`) : '';
                 const diffLabel = diff > 0 ? ` (+${diff})` : diff < 0 ? ` (${diff})` : diff === 0 ? ' (=)' : '';
                 return `
-                <div class="pr-card" data-owner="${team.owner}">
+                <div class="pr-card">
                     <div class="pr-card-header">
                         <div class="pr-rank${rankClass}">#${team.rank}</div>
-                        <div class="pr-team-info">
+                        <div class="pr-team-info" data-owner="${team.owner}">
                             <div class="pr-team-name">${displayName(team.owner)}</div>
                             <div class="pr-owner-name" title="Manager">${team.owner}</div>
                         </div>
@@ -6259,7 +6259,7 @@
                         <div class="pr-stat">PF: <span>${team.pf?.toLocaleString() || 'N/A'}</span></div>
                         <div class="pr-stat">Max PF: <span>${team.maxPf?.toLocaleString() || 'N/A'}</span></div>
                     </div>
-                    <button class="pr-writeup-toggle" onclick="this.nextElementSibling.classList.toggle('open'); this.textContent = this.nextElementSibling.classList.contains('open') ? '\u25B2 Hide Scouting Report' : '\u25BC Show Scouting Report';">\u25BC Show Scouting Report</button>
+                    <button class="pr-writeup-toggle" onclick="event.stopPropagation(); this.nextElementSibling.classList.toggle('open'); this.textContent = this.nextElementSibling.classList.contains('open') ? '\u25B2 Hide Scouting Report' : '\u25BC Show Scouting Report';">\u25BC Show Scouting Report</button>
                     <div class="pr-writeup">${team.writeup}</div>
                 </div>`;
             }).join('');
@@ -6873,9 +6873,9 @@
                 }
                 const totalKTC = rosterKTC + picksKTC;
 
-                return `<div class="roster-card" data-owner="${owner}">
+                return `<div class="roster-card">
                     <div class="roster-card-header">
-                        <div style="min-width:0;overflow:hidden;flex:1"><h3>${displayName(owner)}</h3><div style="font-size:0.8rem;color:var(--text-secondary)" title="Manager">${owner}</div></div>
+                        <div style="min-width:0;overflow:hidden;flex:1" data-owner="${owner}"><h3>${displayName(owner)}</h3><div style="font-size:0.8rem;color:var(--text-secondary)" title="Manager">${owner}</div></div>
                         <div style="display:flex;gap:0.6rem;align-items:center;">
                             <div class="ktc-total-badge" data-tip-title="KTC Breakdown" data-tip="Roster: ${rosterKTC.toLocaleString()} · Picks: ${picksKTC.toLocaleString()}"><div class="ktc-total-label">KTC Total</div><div class="ktc-total-value">${totalKTC.toLocaleString()}</div></div>
                             <div class="age-badge">Avg Age: ${r.avgAge}</div>
@@ -6886,7 +6886,7 @@
                     <div class="roster-section" style="border-top:1px solid var(--border-color)"><div class="roster-section-title">Bench (${r.bench.length})</div>${renderPlayers(r.bench, false)}</div>
                     ${r.taxi.length > 0 ? `<div class="roster-section" style="border-top:1px solid var(--border-color)"><div class="roster-section-title">Taxi (${r.taxi.length})</div>${renderPlayers(r.taxi, false)}</div>` : ''}
                     ${dc ? `<div class="roster-section roster-picks-section" style="border-top:1px solid var(--border-color)">
-                        <button class="roster-picks-toggle" onclick="const el=this.nextElementSibling;el.classList.toggle('open');this.textContent=el.classList.contains('open')?'▲ Draft Picks (${dc.picks.length})':'▼ Draft Picks (${dc.picks.length})'">▼ Draft Picks (${dc.picks.length})</button>
+                        <button class="roster-picks-toggle" onclick="event.stopPropagation();const el=this.nextElementSibling;el.classList.toggle('open');this.textContent=el.classList.contains('open')?'▲ Draft Picks (${dc.picks.length})':'▼ Draft Picks (${dc.picks.length})'">▼ Draft Picks (${dc.picks.length})</button>
                         <div class="roster-picks-content">${picksHtml}</div>
                     </div>` : ''}
                 </div>`;
@@ -6993,9 +6993,9 @@
 
                 const recObj = getRecord(owner, 'all');
                 const record = `${recObj.total.w}-${recObj.total.l}`;
-                return `<div class="dc-card" data-owner="${owner}">
+                return `<div class="dc-card">
                     <div class="dc-card-header">
-                        <div><h3>#${idx+1} ${displayName(owner)}</h3><div style="font-size:0.8rem;color:var(--text-secondary)" title="Manager">${owner}</div><div class="record-cell" style="font-size:0.7rem;color:var(--text-secondary);opacity:0.6;margin-top:0.15rem" title="${recObj.tooltip}">${record} career</div></div>
+                        <div data-owner="${owner}"><h3>#${idx+1} ${displayName(owner)}</h3><div style="font-size:0.8rem;color:var(--text-secondary)" title="Manager">${owner}</div><div class="record-cell" style="font-size:0.7rem;color:var(--text-secondary);opacity:0.6;margin-top:0.15rem" title="${recObj.tooltip}">${record} career</div></div>
                         <div class="dc-value">${totalVal.toLocaleString()}</div>
                     </div>
                     <div class="dc-meta">
