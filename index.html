@@ -6885,14 +6885,33 @@
             if (!userRes.ok) throw new Error('Could not find Sleeper user "' + CONFIG.SLEEPER_USERNAME + '"');
             const userData = await userRes.json();
             const userId = userData.user_id;
-            const leaguesRes = await fetch(`${SLEEPER}/user/${userId}/leagues/nfl/${CONFIG.CURRENT_SEASON}`);
-            const leagues = await leaguesRes.json();
-            const dynasty = leagues.find(l => l.total_rosters === CONFIG.TOTAL_TEAMS && l.settings?.type === 2);
-            if (!dynasty) throw new Error('Could not identify ' + CONFIG.TOTAL_TEAMS + '-team dynasty league for ' + CONFIG.CURRENT_SEASON);
+
+            // Discover the LATEST league for this user. CONFIG.CURRENT_SEASON lags
+            // behind the calendar (it only updates when stats are embedded), so
+            // probe calendar year first, then fall back. The 2026 league exists
+            // before any 2026 stats are embedded — we still want trades from it.
+            const calendarYear = new Date().getFullYear();
+            const candidates = [calendarYear + 1, calendarYear, calendarYear - 1, CONFIG.CURRENT_SEASON]
+                .filter((s, i, arr) => arr.indexOf(s) === i); // dedupe
+            let dynasty = null;
+            for (const season of candidates) {
+                const leaguesRes = await fetch(`${SLEEPER}/user/${userId}/leagues/nfl/${season}`);
+                if (!leaguesRes.ok) continue;
+                const leagues = await leaguesRes.json();
+                if (!Array.isArray(leagues) || leagues.length === 0) continue;
+                const found = leagues.find(l => l.total_rosters === CONFIG.TOTAL_TEAMS && l.settings?.type === 2);
+                if (found) {
+                    dynasty = found;
+                    break;
+                }
+            }
+            if (!dynasty) throw new Error('Could not identify ' + CONFIG.TOTAL_TEAMS + '-team dynasty league for ' + CONFIG.SLEEPER_USERNAME);
+
             const chain = [{ season: dynasty.season, id: dynasty.league_id, settings: dynasty.settings }];
             let prevId = dynasty.previous_league_id;
             while (prevId && prevId !== '0') {
                 const prevRes = await fetch(`${SLEEPER}/league/${prevId}`);
+                if (!prevRes.ok) break;
                 const prev = await prevRes.json();
                 chain.push({ season: prev.season, id: prev.league_id, settings: prev.settings });
                 prevId = prev.previous_league_id;
@@ -6973,8 +6992,9 @@
             return [Number(season), Number(week), Number(timestamp), sides];
         }
 
-        // Main entry point. opts.allSeasons=true scans every league in the chain
-        // (used for backfill); default scans only the current-season league.
+        // Main entry point. By default scans EVERY league in the chain so a single
+        // refresh covers everything from league inception through today. Pass
+        // {currentOnly: true} to only scan the latest season (faster).
         async function fetchSleeperTrades(opts = {}) {
             if (tradesRefreshInFlight) return { added: 0, total: transactionData.trades.length, status: 'in-flight' };
             tradesRefreshInFlight = true;
@@ -6995,7 +7015,7 @@
                 const chain = await getSleeperLeagueChain();
                 await ensureSleeperPlayersCache();
 
-                const targetLeagues = opts.allSeasons ? chain : [chain[0]];
+                const targetLeagues = opts.currentOnly ? [chain[0]] : chain;
                 let added = 0;
                 const existingTimestamps = new Set(transactionData.trades.map(t => Number(t[2])));
                 const SLEEPER = 'https://api.sleeper.app/v1';
