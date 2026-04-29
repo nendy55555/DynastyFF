@@ -2361,6 +2361,50 @@
         }
 
         /* TRANSACTIONS TAB */
+        .trades-refresh-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+        .trades-refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.9rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .trades-refresh-btn:hover:not(:disabled) {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+        .trades-refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .trades-refresh-btn.loading .trades-refresh-icon {
+            animation: trades-spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes trades-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .trades-refresh-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .trades-refresh-status.success { color: var(--accent-teal); }
+        .trades-refresh-status.error { color: #f85149; }
+
         .transactions-filter-bar {
             display: flex;
             flex-wrap: wrap;
@@ -3330,7 +3374,16 @@
         <!-- TRANSACTIONS TAB -->
         <div id="transactions" class="tab-content">
             <h2 class="section-header">Trade History</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.85rem;">Every trade, waiver pickup, and free agent move across league history.</p>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.85rem;">Every trade, waiver pickup, and free agent move across league history.</p>
+
+            <!-- Refresh from Sleeper -->
+            <div class="trades-refresh-bar">
+                <button id="refreshTradesBtn" class="trades-refresh-btn" type="button">
+                    <span class="trades-refresh-icon">↻</span>
+                    <span class="trades-refresh-label">Refresh from Sleeper</span>
+                </button>
+                <span id="refreshTradesStatus" class="trades-refresh-status"></span>
+            </div>
 
             <!-- Filter Controls -->
             <div class="transactions-filter-bar">
@@ -4845,6 +4898,36 @@
                 currentTeamFilter = e.target.value;
                 renderTransactions();
             });
+
+            // Refresh-from-Sleeper button — pulls recent trades and re-renders.
+            const refreshBtn = document.getElementById('refreshTradesBtn');
+            if (refreshBtn && !refreshBtn.dataset.bound) {
+                refreshBtn.dataset.bound = '1';
+                refreshBtn.addEventListener('click', () => fetchSleeperTrades());
+            }
+            // Expose the renderer so fetchSleeperTrades() can refresh the list,
+            // including the team dropdown if a brand-new owner ever appears.
+            _rerenderTrades = () => {
+                // Re-populate team dropdown in case a new owner shows up
+                const select = document.getElementById('transactions-team-select');
+                if (select) {
+                    const current = select.value;
+                    const seen = new Set();
+                    Array.from(select.options).forEach(o => seen.add(o.value));
+                    const allTeamsNow = new Set();
+                    transactionData.trades.forEach(t => Object.keys(t[3]).forEach(team => allTeamsNow.add(team)));
+                    Array.from(allTeamsNow).forEach(team => {
+                        if (seen.has(team)) return;
+                        const opt = document.createElement('option');
+                        opt.value = team;
+                        const tn = allTimeData[team]?.team_name;
+                        opt.textContent = (tn && tn !== team) ? `${tn} (${team})` : team;
+                        select.appendChild(opt);
+                    });
+                    select.value = current;
+                }
+                renderTransactions();
+            };
 
             function renderTransactions() {
                 renderSummary();
@@ -6783,6 +6866,198 @@
                 } else {
                     status.style.display = 'none';
                     console.warn('[DynastyFF] PF load failed (off-season, banner suppressed):', err.message);
+                }
+            }
+        }
+
+        // ========== SLEEPER API - TRADE REFRESH ==========
+        // Walks the league chain (cached), fetches recent trades, converts to local
+        // [year, week, timestamp, sides] format, dedupes against transactionData.trades
+        // by timestamp, and re-renders the trades tab.
+        let sleeperLeagueChainCache = null; // [{season, id, settings}] — built once per page load
+        let tradesRefreshInFlight = false;
+        let _rerenderTrades = null; // initTransactions() assigns its renderTransactions here
+
+        async function getSleeperLeagueChain() {
+            if (sleeperLeagueChainCache) return sleeperLeagueChainCache;
+            const SLEEPER = 'https://api.sleeper.app/v1';
+            const userRes = await fetch(`${SLEEPER}/user/${CONFIG.SLEEPER_USERNAME}`);
+            if (!userRes.ok) throw new Error('Could not find Sleeper user "' + CONFIG.SLEEPER_USERNAME + '"');
+            const userData = await userRes.json();
+            const userId = userData.user_id;
+            const leaguesRes = await fetch(`${SLEEPER}/user/${userId}/leagues/nfl/${CONFIG.CURRENT_SEASON}`);
+            const leagues = await leaguesRes.json();
+            const dynasty = leagues.find(l => l.total_rosters === CONFIG.TOTAL_TEAMS && l.settings?.type === 2);
+            if (!dynasty) throw new Error('Could not identify ' + CONFIG.TOTAL_TEAMS + '-team dynasty league for ' + CONFIG.CURRENT_SEASON);
+            const chain = [{ season: dynasty.season, id: dynasty.league_id, settings: dynasty.settings }];
+            let prevId = dynasty.previous_league_id;
+            while (prevId && prevId !== '0') {
+                const prevRes = await fetch(`${SLEEPER}/league/${prevId}`);
+                const prev = await prevRes.json();
+                chain.push({ season: prev.season, id: prev.league_id, settings: prev.settings });
+                prevId = prev.previous_league_id;
+            }
+            sleeperLeagueChainCache = chain;
+            return chain;
+        }
+
+        async function ensureSleeperPlayersCache() {
+            if (sleeperPlayersCache) return;
+            const pRes = await fetch('https://api.sleeper.app/v1/players/nfl');
+            sleeperPlayersCache = await pRes.json();
+        }
+
+        function buildSleeperRosterToOwnerMap(rosters, users) {
+            const map = {};
+            rosters.forEach(r => {
+                const user = users.find(u => u.user_id === r.owner_id);
+                if (!user) return;
+                const sleeperName = user.display_name;
+                const localKey = (CONFIG.SLEEPER_OWNER_ALIASES && CONFIG.SLEEPER_OWNER_ALIASES[sleeperName]) || sleeperName;
+                map[r.roster_id] = localKey;
+            });
+            return map;
+        }
+
+        // Convert a single Sleeper trade transaction to local format.
+        // Returns null if it can't resolve at least 2 sides with movement.
+        function convertSleeperTrade(txn, season, rosterToOwner) {
+            const sides = {};
+            const rosterIds = Array.isArray(txn.roster_ids) ? txn.roster_ids : [];
+            rosterIds.forEach(rid => {
+                const owner = rosterToOwner[rid];
+                if (!owner) return;
+                if (!sides[owner]) sides[owner] = { got: [], gave: [] };
+            });
+
+            // Players: adds[player_id] = roster_id receiving; drops[player_id] = roster_id losing.
+            const adds = txn.adds || {};
+            const drops = txn.drops || {};
+            Object.entries(adds).forEach(([pid, rid]) => {
+                const recv = rosterToOwner[rid];
+                const name = getSleeperPlayerName(pid) || ('Player#' + pid);
+                if (recv && sides[recv]) sides[recv].got.push(name);
+            });
+            Object.entries(drops).forEach(([pid, rid]) => {
+                const give = rosterToOwner[rid];
+                const name = getSleeperPlayerName(pid) || ('Player#' + pid);
+                if (give && sides[give]) sides[give].gave.push(name);
+            });
+
+            // Draft picks — use round-only format for future picks. Matches existing data.
+            (txn.draft_picks || []).forEach(p => {
+                const fromOwner = rosterToOwner[p.previous_owner_id];
+                const toOwner = rosterToOwner[p.owner_id];
+                const asset = `${p.season} R${p.round}`;
+                if (toOwner && sides[toOwner]) sides[toOwner].got.push(asset);
+                if (fromOwner && sides[fromOwner]) sides[fromOwner].gave.push(asset);
+            });
+
+            // FAAB swaps in trades
+            (txn.waiver_budget || []).forEach(w => {
+                const fromOwner = rosterToOwner[w.sender];
+                const toOwner = rosterToOwner[w.receiver];
+                const asset = `$${w.amount} FAAB`;
+                if (toOwner && sides[toOwner]) sides[toOwner].got.push(asset);
+                if (fromOwner && sides[fromOwner]) sides[fromOwner].gave.push(asset);
+            });
+
+            // Drop sides with no movement, then require at least 2 active sides.
+            Object.keys(sides).forEach(k => {
+                if (sides[k].got.length === 0 && sides[k].gave.length === 0) delete sides[k];
+            });
+            if (Object.keys(sides).length < 2) return null;
+
+            const week = txn.leg || 1;
+            const timestamp = txn.created || txn.status_updated || Date.now();
+            return [Number(season), Number(week), Number(timestamp), sides];
+        }
+
+        // Main entry point. opts.allSeasons=true scans every league in the chain
+        // (used for backfill); default scans only the current-season league.
+        async function fetchSleeperTrades(opts = {}) {
+            if (tradesRefreshInFlight) return { added: 0, total: transactionData.trades.length, status: 'in-flight' };
+            tradesRefreshInFlight = true;
+            const status = document.getElementById('refreshTradesStatus');
+            const btn = document.getElementById('refreshTradesBtn');
+            const setStatus = (msg, kind) => {
+                if (!status) return;
+                status.className = 'trades-refresh-status' + (kind ? ' ' + kind : '');
+                status.textContent = msg;
+            };
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('loading');
+            }
+            setStatus('Connecting to Sleeper...', '');
+
+            try {
+                const chain = await getSleeperLeagueChain();
+                await ensureSleeperPlayersCache();
+
+                const targetLeagues = opts.allSeasons ? chain : [chain[0]];
+                let added = 0;
+                const existingTimestamps = new Set(transactionData.trades.map(t => Number(t[2])));
+                const SLEEPER = 'https://api.sleeper.app/v1';
+
+                for (const league of targetLeagues) {
+                    setStatus(`Reading ${league.season} league...`, '');
+                    const [rostersRes, usersRes] = await Promise.all([
+                        fetch(`${SLEEPER}/league/${league.id}/rosters`),
+                        fetch(`${SLEEPER}/league/${league.id}/users`)
+                    ]);
+                    const rosters = await rostersRes.json();
+                    const users = await usersRes.json();
+                    const rosterToOwner = buildSleeperRosterToOwnerMap(rosters, users);
+
+                    setStatus(`Fetching ${league.season} trades...`, '');
+                    // Sleeper uses week 0 for off-season trades; weeks 1-18 cover the season + playoffs.
+                    const weekPromises = [];
+                    for (let w = 0; w <= 18; w++) {
+                        weekPromises.push(
+                            fetch(`${SLEEPER}/league/${league.id}/transactions/${w}`)
+                                .then(r => r.ok ? r.json() : [])
+                                .catch(() => [])
+                        );
+                    }
+                    const allWeeks = await Promise.all(weekPromises);
+
+                    allWeeks.forEach(weekTxns => {
+                        if (!Array.isArray(weekTxns)) return;
+                        weekTxns.forEach(txn => {
+                            if (txn.type !== 'trade') return;
+                            if (txn.status !== 'complete') return;
+                            const record = convertSleeperTrade(txn, league.season, rosterToOwner);
+                            if (!record) return;
+                            if (existingTimestamps.has(record[2])) return;
+                            transactionData.trades.push(record);
+                            existingTimestamps.add(record[2]);
+                            added++;
+                        });
+                    });
+                }
+
+                // Newest first so the list keeps its existing sort.
+                transactionData.trades.sort((a, b) => b[2] - a[2]);
+
+                if (typeof _rerenderTrades === 'function') _rerenderTrades();
+
+                const total = transactionData.trades.length;
+                if (added === 0) {
+                    setStatus(`Up to date — no new trades (${total} total)`, 'success');
+                } else {
+                    setStatus(`Added ${added} trade${added === 1 ? '' : 's'} (${total} total)`, 'success');
+                }
+                return { added, total };
+            } catch (err) {
+                console.error('[DynastyFF] Sleeper trades refresh failed:', err);
+                setStatus('Refresh failed: ' + (err.message || 'unknown error'), 'error');
+                return { added: 0, total: transactionData.trades.length, error: err.message };
+            } finally {
+                tradesRefreshInFlight = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('loading');
                 }
             }
         }
