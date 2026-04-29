@@ -6938,6 +6938,26 @@
             return map;
         }
 
+        // Format a draft pick asset string. If the season's draft order is locked
+        // (we have a pick projection for that year), use exact slot format:
+        //   "2026 1.04"  → 2026 round 1, pick 4
+        // Otherwise fall back to round-only format for unsettled future picks:
+        //   "2027 R3"
+        // Drives both display ("see slot 4 instead of just 1st round") and tier-aware
+        // KTC valuation (getAssetKTC routes both formats correctly).
+        function formatSleeperPickAsset(season, round, originalOwner) {
+            // Locked-order seasons: extend this map as new lotteries are run.
+            const lockedProjections = (typeof pickProjection2026 !== 'undefined')
+                ? { '2026': pickProjection2026 }
+                : {};
+            const proj = lockedProjections[String(season)];
+            if (proj && originalOwner && proj[originalOwner]?.pick) {
+                const slot = String(proj[originalOwner].pick).padStart(2, '0');
+                return `${season} ${round}.${slot}`;
+            }
+            return `${season} R${round}`;
+        }
+
         // Convert a single Sleeper trade transaction to local format.
         // Returns null if it can't resolve at least 2 sides with movement.
         function convertSleeperTrade(txn, season, rosterToOwner) {
@@ -6963,11 +6983,16 @@
                 if (give && sides[give]) sides[give].gave.push(name);
             });
 
-            // Draft picks — use round-only format for future picks. Matches existing data.
+            // Draft picks. If the season's draft order is locked (we have a pick
+            // projection for it), format with the original owner's pick slot:
+            // "2026 1.04". Otherwise fall back to round-only "YYYY R<round>" for
+            // unsettled future picks. roster_id on the Sleeper pick is the slot's
+            // home team (the pick's "original owner" by lottery position).
             (txn.draft_picks || []).forEach(p => {
                 const fromOwner = rosterToOwner[p.previous_owner_id];
                 const toOwner = rosterToOwner[p.owner_id];
-                const asset = `${p.season} R${p.round}`;
+                const originalOwner = rosterToOwner[p.roster_id];
+                const asset = formatSleeperPickAsset(p.season, p.round, originalOwner);
                 if (toOwner && sides[toOwner]) sides[toOwner].got.push(asset);
                 if (fromOwner && sides[fromOwner]) sides[fromOwner].gave.push(asset);
             });
