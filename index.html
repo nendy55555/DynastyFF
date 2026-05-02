@@ -2721,6 +2721,94 @@
             font-variant-numeric: tabular-nums;
         }
 
+        /* ── Trade Leaderboard ── */
+        .trade-leaderboard {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        .trade-leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.85rem;
+        }
+        .trade-leaderboard-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-primary);
+        }
+        .trade-leaderboard-sub {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+        .trade-leaderboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.4rem 1.25rem;
+        }
+        .tlb-row {
+            display: grid;
+            grid-template-columns: 1.4rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.3rem 0.4rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            transition: background 0.15s ease;
+        }
+        .tlb-row:hover { background: rgba(255, 255, 255, 0.03); }
+        .tlb-row.tlb-active {
+            background: rgba(0, 212, 170, 0.08);
+            outline: 1px solid rgba(0, 212, 170, 0.25);
+        }
+        .tlb-rank {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .tlb-row.tlb-rank-1 .tlb-rank { color: var(--accent-gold); }
+        .tlb-row.tlb-rank-2 .tlb-rank { color: #c9d1d9; }
+        .tlb-row.tlb-rank-3 .tlb-rank { color: #cd7f32; }
+        .tlb-team {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            min-width: 0;
+        }
+        .tlb-team-name {
+            color: var(--text-primary);
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tlb-bar-track {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .tlb-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-teal), var(--accent-gold));
+            border-radius: 2px;
+        }
+        .tlb-count {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-teal);
+            font-variant-numeric: tabular-nums;
+            min-width: 1.5rem;
+            text-align: right;
+        }
+
         @media (max-width: 768px) {
             .trade-card-body {
                 grid-template-columns: 1fr;
@@ -2738,6 +2826,10 @@
 
             .transactions-filter-group {
                 min-width: 100%;
+            }
+
+            .trade-leaderboard-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -5073,6 +5165,56 @@
                 const listContainer = document.getElementById('transactionsList');
                 listContainer.innerHTML = '';
 
+                // Type filter — skip trade rendering entirely when viewer wants only waivers/FA.
+                const typeAllowsTrades = currentTypeFilter === 'all' || currentTypeFilter === 'trades';
+
+                // Leaderboard counts use year filter only — keeps the comparative view useful
+                // even when a single team is selected (otherwise it'd collapse to one row).
+                if (typeAllowsTrades) {
+                    const counts = {};
+                    transactionData.trades.forEach(trade => {
+                        const [year, , , details] = trade;
+                        if (currentYearFilter !== 'all' && year.toString() !== currentYearFilter) return;
+                        Object.keys(details).forEach(team => {
+                            counts[team] = (counts[team] || 0) + 1;
+                        });
+                    });
+
+                    const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                    if (ranked.length > 0) {
+                        const maxCount = ranked[0][1] || 1;
+                        const yearLabel = currentYearFilter === 'all' ? 'All-Time' : currentYearFilter;
+                        const rowsHTML = ranked.map(([team, count], i) => {
+                            const rank = i + 1;
+                            const rankClass = rank <= 3 ? `tlb-rank-${rank}` : '';
+                            const activeClass = currentTeamFilter === team ? 'tlb-active' : '';
+                            const pct = Math.round((count / maxCount) * 100);
+                            return `
+                                <div class="tlb-row ${rankClass} ${activeClass}">
+                                    <span class="tlb-rank">${rank}</span>
+                                    <div class="tlb-team">
+                                        <span class="tlb-team-name" data-owner="${team}" title="${team}">${displayName(team)}</span>
+                                        <div class="tlb-bar-track"><div class="tlb-bar-fill" style="width:${pct}%"></div></div>
+                                    </div>
+                                    <span class="tlb-count">${count}</span>
+                                </div>
+                            `;
+                        }).join('');
+
+                        const totalTradeMoves = ranked.reduce((s, [, c]) => s + c, 0);
+                        const leaderboardHTML = `
+                            <div class="trade-leaderboard">
+                                <div class="trade-leaderboard-header">
+                                    <span class="trade-leaderboard-title">Trade Leaderboard</span>
+                                    <span class="trade-leaderboard-sub">${yearLabel} · ${totalTradeMoves} team-trades</span>
+                                </div>
+                                <div class="trade-leaderboard-grid">${rowsHTML}</div>
+                            </div>
+                        `;
+                        listContainer.insertAdjacentHTML('beforeend', leaderboardHTML);
+                    }
+                }
+
                 // Filter trades
                 const filteredTrades = transactionData.trades
                     .filter(trade => {
@@ -5085,7 +5227,9 @@
                     .sort((a, b) => b[2] - a[2]); // Sort by timestamp descending (newest first)
 
                 if (filteredTrades.length === 0) {
-                    listContainer.innerHTML = '<div style="text-align:center;padding:3rem 1rem;color:#6b7280;font-size:0.9rem;">No trades match these filters. Try a different year or type.</div>';
+                    if (typeAllowsTrades) {
+                        listContainer.insertAdjacentHTML('beforeend', '<div style="text-align:center;padding:3rem 1rem;color:#6b7280;font-size:0.9rem;">No trades match these filters. Try a different year or type.</div>');
+                    }
                     return;
                 }
 
