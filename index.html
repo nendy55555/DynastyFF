@@ -2701,6 +2701,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .trade-side-ktc {
@@ -4090,8 +4092,9 @@
             // Pick valuation tuning
             PICK_DISCOUNT_PER_YEAR: 0.05,       // 5% discount per year into the future
             QB_VALUE_DISCOUNT: 0.80,            // 20% discount on QB KTC values — true 1QB league correction (KTC's "1QB" data still carries superflex-influenced trade behavior)
-            TOP3_PICK_BUMP: 1.15,               // 15% premium for top-3 picks
-            PICK_TIER_BOUNDARIES: { EARLY: 4, MID: 8 }, // slot 1-4 = Early, 5-8 = Mid, 9+ = Late
+            // TOP3_PICK_BUMP retired — the per-slot power-law curve in pickValueCurves
+            // already lifts 1.01-1.03 above the Early-tier average naturally.
+            PICK_TIER_BOUNDARIES: { EARLY: 4, MID: 8 }, // slot 1-4 = Early, 5-8 = Mid, 9+ = Late (still used by getPickProjection & legacy fallback)
 
             // Trade grading — rawAdj coefficients
             TRADE_GRADE: {
@@ -4656,18 +4659,12 @@
             if (futurePickMatch) {
                 const year = futurePickMatch[1];
                 const round = futurePickMatch[2];
-                const roundName = round === '1' ? '1st' : round === '2' ? '2nd' : round === '3' ? '3rd' : '4th';
-                // Use projected tier from original owner. 2026 = settled (static table);
+                // Project the slot from original owner. 2026 = settled (static table);
                 // 2027/2028 = derived from contender/rebuilder composite (win% + Max PF).
                 const proj = originalOwner ? getPickProjection(originalOwner, year) : null;
-                const tier = proj ? proj.tier : 'Mid';
-                const key = tier + ' ' + roundName;
-                const closestYear = Object.keys(ktcPickValues[key] || {}).sort((a,b) => Math.abs(a - year) - Math.abs(b - year))[0];
-                let val = ktcPickValues[key]?.[closestYear] || 0;
-                // 15% bump for top-3 picks in each rookie draft class (works for any year now)
-                if (round === '1' && proj && proj.pick <= 3) {
-                    val *= CONFIG.TOP3_PICK_BUMP;
-                }
+                const slot = proj && proj.pick ? proj.pick : 6; // default mid-round if unknown
+                let val = getPickValueBySlot(round, slot, year);
+                // Future-pick uncertainty discount — picks further out are riskier.
                 const yearsOut = Math.max(0, parseInt(year) - CONFIG.CURRENT_SEASON);
                 val *= (1 - yearsOut * CONFIG.PICK_DISCOUNT_PER_YEAR);
                 return Math.round(val);
@@ -4678,16 +4675,7 @@
                 const year = exactPickMatch[1];
                 const round = exactPickMatch[2];
                 const slot = parseInt(exactPickMatch[3]);
-                const roundName = round === '1' ? '1st' : round === '2' ? '2nd' : round === '3' ? '3rd' : '4th';
-                const tier = slot <= CONFIG.PICK_TIER_BOUNDARIES.EARLY ? 'Early' : slot <= CONFIG.PICK_TIER_BOUNDARIES.MID ? 'Mid' : 'Late';
-                const key = tier + ' ' + roundName;
-                const closestYear = Object.keys(ktcPickValues[key] || {}).sort((a,b) => Math.abs(a - year) - Math.abs(b - year))[0];
-                let pickVal = ktcPickValues[key]?.[closestYear] || 0;
-                // 15% bump for top-3 picks in each rookie draft class
-                if (round === '1' && slot <= 3) {
-                    pickVal = Math.round(pickVal * CONFIG.TOP3_PICK_BUMP);
-                }
-                return pickVal;
+                return getPickValueBySlot(round, slot, year);
             }
             // It's a player
             const n = assetName.trim();
@@ -6149,6 +6137,89 @@
             "Early 3rd":{"2026":2569,"2027":2671,"2028":2350},"Mid 3rd":{"2026":2405,"2027":2469,"2028":2205},"Late 3rd":{"2026":2266,"2027":2347,"2028":2058},
             "Early 4th":{"2026":1824,"2027":1888,"2028":1673},"Mid 4th":{"2026":1747,"2027":1804,"2028":1572},"Late 4th":{"2026":1654,"2027":1668,"2028":1301}
         };
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        //  Per-slot pick valuation (power-law curve)
+        // ─────────────────────────────────────────────────────────────────────────────
+        // KTC publishes Early/Mid/Late tier values — each is the average of slots 1-4,
+        // 5-8, 9-12 respectively. Treating those as samples at slots 2.5, 6.5, 10.5
+        // and fitting a power-law in log-log space gives every pick (1.01, 1.02, …,
+        // 4.12) a distinct, monotonically-decreasing value while preserving tier
+        // averages. This bakes "1.01 > 1.02 > 1.03 > …" into every trade calculation
+        // and replaces the cliff-style tier lookup that used to make 1.04 = 1.01.
+        //
+        // Why power-law: dynasty pick value drops fast at the top and flattens at the
+        // back — a straight line over-discounts the early picks and under-discounts
+        // the late ones. y = a · slot^(-b) matches consensus pick curves (DLF, FP).
+        function fitPickCurvePowerLaw(anchors) {
+            // anchors: [{slot, value}, …] (typically 3 points at 2.5, 6.5, 10.5)
+            const valid = anchors.filter(a => a.value > 0);
+            if (valid.length < 2) return null;
+            const xs = valid.map(a => Math.log(a.slot));
+            const ys = valid.map(a => Math.log(a.value));
+            const n = valid.length;
+            const meanX = xs.reduce((s, v) => s + v, 0) / n;
+            const meanY = ys.reduce((s, v) => s + v, 0) / n;
+            let num = 0, den = 0;
+            for (let i = 0; i < n; i++) {
+                num += (xs[i] - meanX) * (ys[i] - meanY);
+                den += (xs[i] - meanX) ** 2;
+            }
+            if (den === 0) return null;
+            const slope = num / den;            // = -b
+            const logA = meanY - slope * meanX;
+            return { a: Math.exp(logA), b: -slope };
+        }
+
+        // Pre-build one curve per (round, year). Cached at module load — cheap.
+        const pickValueCurves = (function buildPickValueCurves() {
+            const curves = {};
+            const roundNames = { '1': '1st', '2': '2nd', '3': '3rd', '4': '4th' };
+            const tierSlots = { 'Early': 2.5, 'Mid': 6.5, 'Late': 10.5 };
+            ['1', '2', '3', '4'].forEach(round => {
+                const roundName = roundNames[round];
+                const yearsSet = new Set();
+                ['Early', 'Mid', 'Late'].forEach(tier => {
+                    Object.keys(ktcPickValues[tier + ' ' + roundName] || {}).forEach(y => yearsSet.add(y));
+                });
+                yearsSet.forEach(year => {
+                    const anchors = ['Early', 'Mid', 'Late'].map(tier => ({
+                        slot: tierSlots[tier],
+                        value: ktcPickValues[tier + ' ' + roundName]?.[year] || 0
+                    }));
+                    const curve = fitPickCurvePowerLaw(anchors);
+                    if (curve) curves[round + '|' + year] = curve;
+                });
+            });
+            return curves;
+        })();
+
+        // Resolve a single pick slot (1-12) within a round/year to its interpolated
+        // value. Falls back to the nearest year's curve if exact year missing, then
+        // to the legacy KTC tier value so we never return 0 for a known pick.
+        function getPickValueBySlot(round, slot, year) {
+            const r = String(round);
+            const yKey = String(year);
+            const s = Math.max(1, Math.min(14, Number(slot) || 6));
+            let curve = pickValueCurves[r + '|' + yKey];
+            if (!curve) {
+                const candidates = Object.keys(pickValueCurves)
+                    .filter(k => k.startsWith(r + '|'))
+                    .map(k => k.split('|')[1]);
+                if (candidates.length) {
+                    const closest = candidates.sort((a, b) => Math.abs(a - yKey) - Math.abs(b - yKey))[0];
+                    curve = pickValueCurves[r + '|' + closest];
+                }
+            }
+            if (curve) return Math.round(curve.a * Math.pow(s, -curve.b));
+            const roundName = r === '1' ? '1st' : r === '2' ? '2nd' : r === '3' ? '3rd' : '4th';
+            const tier = s <= CONFIG.PICK_TIER_BOUNDARIES.EARLY ? 'Early'
+                       : s <= CONFIG.PICK_TIER_BOUNDARIES.MID   ? 'Mid' : 'Late';
+            const key = tier + ' ' + roundName;
+            const closestYear = Object.keys(ktcPickValues[key] || {})
+                .sort((a, b) => Math.abs(a - yKey) - Math.abs(b - yKey))[0];
+            return ktcPickValues[key]?.[closestYear] || 0;
+        }
         // ─────────────────────────────────────────────────────────────────────────
         // FUTURE-PICK PROJECTION
         // Uses the same 2025 data the Contender/Rebuilder chart shows (Win %, Max PF)
@@ -7271,24 +7342,16 @@
             if (!yearMatch || !roundMatch) return 0;
             const year = yearMatch[1];
             const round = roundMatch[1];
-            const roundName = round === '1' ? '1st' : round === '2' ? '2nd' : round === '3' ? '3rd' : '4th';
 
-            // Determine whose pick it originally is (for tier projection)
+            // Determine whose pick it originally is (for slot projection)
             const fromMatch = pickStr.match(/from (\w+)/);
             const originalOwner = fromMatch ? fromMatch[1] : owner;
 
             // Project the pick slot using contender/rebuilder composite (win% + Max PF).
             // 2026 = settled (static table); 2027/2028 = derived per year.
             const proj = getPickProjection(originalOwner, year);
-            const tier = proj.tier;
-
-            const key = tier + ' ' + roundName;
-            let baseVal = ktcPickValues[key]?.[year] || 0;
-            // 15% bump for top-3 picks in each rookie draft class (any year)
-            if (round === '1' && proj.pick <= 3) {
-                baseVal = Math.round(baseVal * CONFIG.TOP3_PICK_BUMP);
-            }
-            return baseVal;
+            const slot = proj.pick || 6;
+            return getPickValueBySlot(round, slot, year);
         }
 
         function getPickLabel(pickStr, owner) {
