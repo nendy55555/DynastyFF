@@ -2753,7 +2753,7 @@
         }
         .tlb-row {
             display: grid;
-            grid-template-columns: 1.4rem minmax(0, 1fr) auto;
+            grid-template-columns: 2rem minmax(0, 1fr) auto;
             align-items: center;
             gap: 0.6rem;
             padding: 0.3rem 0.4rem;
@@ -5184,14 +5184,29 @@
                     if (ranked.length > 0) {
                         const maxCount = ranked[0][1] || 1;
                         const yearLabel = currentYearFilter === 'all' ? 'All-Time' : currentYearFilter;
-                        const rowsHTML = ranked.map(([team, count], i) => {
-                            const rank = i + 1;
+
+                        // Competition ranking (1, 1, 3, ...): tied teams share a rank,
+                        // the next distinct count jumps past the tied positions.
+                        let lastCount = null;
+                        let lastRank = 0;
+                        const withRanks = ranked.map(([team, count], i) => {
+                            const rank = (count === lastCount) ? lastRank : (i + 1);
+                            lastCount = count;
+                            lastRank = rank;
+                            return { team, count, rank };
+                        });
+                        const tieCounts = {};
+                        withRanks.forEach(r => { tieCounts[r.rank] = (tieCounts[r.rank] || 0) + 1; });
+
+                        const rowsHTML = withRanks.map(({ team, count, rank }) => {
                             const rankClass = rank <= 3 ? `tlb-rank-${rank}` : '';
                             const activeClass = currentTeamFilter === team ? 'tlb-active' : '';
                             const pct = Math.round((count / maxCount) * 100);
+                            const isTied = tieCounts[rank] > 1;
+                            const rankLabel = isTied ? `T-${rank}` : rank;
                             return `
                                 <div class="tlb-row ${rankClass} ${activeClass}">
-                                    <span class="tlb-rank">${rank}</span>
+                                    <span class="tlb-rank">${rankLabel}</span>
                                     <div class="tlb-team">
                                         <span class="tlb-team-name" data-owner="${team}" title="${team}">${displayName(team)}</span>
                                         <div class="tlb-bar-track"><div class="tlb-bar-fill" style="width:${pct}%"></div></div>
