@@ -2652,6 +2652,44 @@
             letter-spacing: -0.02em;
         }
 
+        /* FLEECED banner — shown next to a team that received a grade below C (D or F) */
+        .trade-fleeced-banner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+            padding: 0.45rem 0.75rem;
+            background: linear-gradient(90deg,
+                rgba(220, 38, 38, 0.18),
+                rgba(220, 38, 38, 0.32),
+                rgba(220, 38, 38, 0.18));
+            border: 1px solid rgba(248, 113, 113, 0.55);
+            border-radius: 6px;
+            color: #fecaca;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            animation: fleecedPulse 2.2s ease-in-out infinite;
+        }
+        .trade-fleeced-banner .fleeced-sheep {
+            font-size: 1rem;
+            letter-spacing: 0;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));
+            animation: fleecedSheep 1.8s ease-in-out infinite;
+        }
+        .trade-fleeced-banner .fleeced-sheep:nth-child(odd) { animation-delay: 0.3s; }
+        @keyframes fleecedPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+            50%      { box-shadow: 0 0 12px 1px rgba(220, 38, 38, 0.45); }
+        }
+        @keyframes fleecedSheep {
+            0%, 100% { transform: translateY(0) rotate(-4deg); }
+            50%      { transform: translateY(-2px) rotate(4deg); }
+        }
+
         .trade-grade-val {
             font-size: 0.68rem;
             font-weight: 500;
@@ -5075,6 +5113,16 @@
                         </span>`;
                     };
 
+                    // Below-C grade ⇒ this side got fleeced. Grade scale here is A+/A/B+/B/C+/C/D/F.
+                    const isFleeced = (g) => g && (g.grade === 'D' || g.grade === 'F');
+                    const fleecedBanner = `<div class="trade-fleeced-banner" title="Got below a C — got fleeced">
+                        <span class="fleeced-sheep">🐑</span>
+                        <span class="fleeced-sheep">🐑</span>
+                        <span>FLEECED</span>
+                        <span class="fleeced-sheep">🐑</span>
+                        <span class="fleeced-sheep">🐑</span>
+                    </div>`;
+
                     const bodyHTML = `
                         <div class="trade-card-body">
                             <div class="trade-side">
@@ -5085,6 +5133,7 @@
                                 <div class="trade-side-assets">
                                     ${renderAssets(sides[team1].got, team2)}
                                 </div>
+                                ${isFleeced(g1) ? fleecedBanner : ''}
                             </div>
                             <div class="trade-divider">
                                 <span class="trade-arrow">↔</span>
@@ -5097,6 +5146,7 @@
                                 <div class="trade-side-assets">
                                     ${renderAssets(sides[team2].got, team1)}
                                 </div>
+                                ${isFleeced(g2) ? fleecedBanner : ''}
                             </div>
                         </div>
                         <div class="trade-grade-row">
