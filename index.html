@@ -2563,7 +2563,11 @@
             grid-template-columns: 1fr auto 1fr;
             gap: 1rem;
             padding: 1.5rem;
-            align-items: center;
+            /* align-items: start so both team headers anchor at the top of their
+               column. If only one side has the FLEECED banner (or just more rows
+               of assets), the OTHER side's content stays put — the team names
+               always align across the row, and the extra height stacks below. */
+            align-items: start;
         }
 
         .trade-side {
@@ -2611,8 +2615,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
             color: var(--text-secondary);
+            /* Aligned with the team headers at the top of the row, so it visually
+               anchors to "X receives ↔ Y receives" rather than floating mid-asset. */
+            padding-top: 0.25rem;
+            align-self: start;
         }
 
         .trade-arrow {
@@ -4879,6 +4888,37 @@
             "bradysballzfdf": {waivers: 12, fa: 48, byYear: {"2023":{w:3,fa:9},"2024":{w:1,fa:17},"2025":{w:8,fa:22}}}
           }
         };
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        //  Hydrate trades from localStorage on boot.
+        //  Same idea as the KTC/FP cache hydration above: any user who has loaded the
+        //  site before will have the latest Sleeper-fetched trades cached locally, so
+        //  the first paint already shows them — no need to wait for or click Refresh.
+        //  fetchSleeperTrades() also runs in the background after init and overwrites
+        //  this cache, so every visit picks up new league-wide trades automatically.
+        //  Dedupe is by timestamp (matches fetchSleeperTrades).
+        // ─────────────────────────────────────────────────────────────────────────────
+        (function hydrateTradesFromCache() {
+            try {
+                const raw = localStorage.getItem('dff_trades_v1');
+                if (!raw) return;
+                const { t, d } = JSON.parse(raw) || {};
+                if (!Array.isArray(d) || !d.length) return;
+                const existing = new Set(transactionData.trades.map(tr => Number(tr[2])));
+                let added = 0;
+                d.forEach(tr => {
+                    if (!Array.isArray(tr) || tr.length < 4) return;
+                    const ts = Number(tr[2]);
+                    if (existing.has(ts)) return;
+                    transactionData.trades.push(tr);
+                    existing.add(ts);
+                    added++;
+                });
+                if (added) transactionData.trades.sort((a, b) => b[2] - a[2]);
+            } catch (e) {
+                console.warn('[DynastyFF] Trade cache hydration failed:', e);
+            }
+        })();
 
         // TRANSACTIONS INITIALIZATION
         function initTransactions() {
@@ -7206,6 +7246,18 @@
                 // Newest first so the list keeps its existing sort.
                 transactionData.trades.sort((a, b) => b[2] - a[2]);
 
+                // Persist the merged set so the next page load shows new trades
+                // immediately — without requiring another Refresh click. Cache key:
+                // dff_trades_v1. Same pattern as dff_ktc_v2 / dff_fp_v2.
+                try {
+                    localStorage.setItem('dff_trades_v1', JSON.stringify({
+                        t: Date.now(),
+                        d: transactionData.trades
+                    }));
+                } catch (e) {
+                    console.warn('[DynastyFF] Could not persist trades to localStorage:', e);
+                }
+
                 if (typeof _rerenderTrades === 'function') _rerenderTrades();
 
                 const total = transactionData.trades.length;
@@ -7861,6 +7913,18 @@
             safeInit('draftCapital', () => initDraftCapital());
             safeInit('draftBoard', () => initDraftBoard());
             safeInit('transactions', () => initTransactions());
+
+            // Auto-fetch the latest trades from Sleeper in the background. The cached
+            // trades from localStorage have already painted (see hydrateTradesFromCache),
+            // so this just merges in anything new and triggers _rerenderTrades. Means
+            // every visit shows new trades by default — no Refresh click required, and
+            // because every user hits the same Sleeper source, all viewers converge on
+            // the same data automatically.
+            setTimeout(() => {
+                if (typeof fetchSleeperTrades === 'function') {
+                    fetchSleeperTrades().catch(err => console.warn('[DynastyFF] Auto-fetch trades failed:', err));
+                }
+            }, 800);
         });
 
         // ═══════════════════════════════════════════
